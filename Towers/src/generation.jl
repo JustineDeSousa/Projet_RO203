@@ -2,54 +2,46 @@
 include("io.jl")
 
 """
-Generate an n*n grid
+Generate a n*n grid
 
 Argument
 - n: size of the grid
 """
 function generateInstance(n::Int64)
-	println("in generateInstance")
     towers = Array{Int64}(zeros(n,n))
-	
 	filledCases = 0
-	
-			
+
 	while(filledCases < n*n)
-		i=Int64(floor(filledCases/n)+1)
-		j=rem(filledCases,n)+1
-		println("i=",i,"j=",j)
+		i = Int64(floor(filledCases/n)+1)
+		j = rem(filledCases,n)+1
 		valTested = Array{Int64}(zeros(0))
+		
 		v = ceil.(Int, n * rand())
 		push!(valTested,v)
+		
 		while !isNumberValuable(towers,i,j,v) && size(valTested,1) < n
 			v = ceil.(Int, n * rand())
 			if !(v in valTested)
 				push!(valTested,v)
 			end
-			#println(towers)
 		end
-		
 		towers[i,j] = v
 		filledCases += 1
+		
 		if size(valTested,1) >= n
 			towers = Array{Int64}(zeros(n,n))
 			filledCases = 0
 		end
 		
 	end
-	println("towers= ",towers)
-	
 	nord = Array{Int64}(zeros(n))
 	for j in 1:n
 		for i in 1:n
 			if isVisible(towers,i,j,"nord")
-				#println("isVisible", i, " ", j)
 				nord[j]+=1
 			end
-			
 		end
 	end
-
 	sud = Array{Int64}(zeros(n))
 	for j in 1:n
 		for i in 1:n
@@ -58,17 +50,14 @@ function generateInstance(n::Int64)
 			end
 		end
 	end
-	
 	ouest = Array{Int64}(zeros(n))
 	for i in 1:n
 		for j in 1:n
 			if isVisible(towers,i,j,"ouest")
-				println("isVisible(",i," ",j,") =", isVisible(towers,i,j,"ouest"))
 				ouest[i]+=1
 			end
 		end
 	end
-	
     est = Array{Int64}(zeros(n))
 	for i in 1:n
 		for j in 1:n
@@ -77,10 +66,7 @@ function generateInstance(n::Int64)
 			end
 		end
 	end
-	
-	
-	
-	return towers, nord, sud, ouest, est
+	return nord, sud, ouest, est
 end
 
 function isNumberValuable(t,i,j,k)

@@ -21,10 +21,10 @@ function readInputFile(inputFile::String)
 	n = length(split(data[1], ","))
     towers = Array{Int64}(undef, n, n, n)
 	
-	nord = map(x->parse(Int64,x),split(data[1],","))
-	sud = map(x->parse(Int64,x),split(data[2],","))
+	nord= 	map(x->parse(Int64,x),split(data[1],","))
+	sud = 	map(x->parse(Int64,x),split(data[2],","))
 	ouest = map(x->parse(Int64,x),split(data[3],","))
-	est = map(x->parse(Int64,x),split(data[4],","))
+	est = 	map(x->parse(Int64,x),split(data[4],","))
 	
 	return nord, sud, ouest, est
 
@@ -36,26 +36,26 @@ Display a grid represented by a 2-dimensional array
 Argument:
 - t: array of size n*n with values in [0, n] (0 if the cell is empty)
 """
-function displayGrid(t::Array{Int64, 2},nord,sud,ouest,est)
+function displayGrid(nord,sud,ouest,est)
 
-    n = size(t, 1)
+    n = size(nord, 1)
     
-	print("  ")
+	print("    ")
 	for j in 1:n
 		print(nord[j]," ")
 	end
 	println()
-    println("  ", "-"^(2*n)) 
+    println("   ", "-"^(2*n+1)) 
     
 	for i in 1:n
-		print(ouest[i],"|")
+		print(ouest[i]," | ")
 		for j in 1:n
-			print(t[i,j], " ")
+			print("  ")
 		end
-		println("|",est[i])
+		println("| ",est[i])
 	end
-	println("  ", "-"^(2*n)) 
-	print("  ")
+	println("   ", "-"^(2*n+1)) 
+	print("    ")
 	for j in 1:n
 		print(sud[j]," ")
 	end
