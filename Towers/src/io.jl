@@ -1,6 +1,6 @@
 # This file contains functions related to reading, writing and displaying a grid and experimental results
 
-#using JuMP
+using JuMP
 #using Plots
 #import GR
 
@@ -61,6 +61,49 @@ function displayGrid(nord,sud,ouest,est)
 	end
 	println()
     
+end
+
+"""
+Display cplex solution
+
+Argument
+- x: 3-dimensional variables array such that x[i, j, k] = 1 if cell (i, j) has value k
+"""
+function displaySolution(x::Array{VariableRef,3}, nord, sud, ouest, est)
+
+    n = size(x, 1)
+    y = JuMP.value.(x)
+	t = Array{Int64,2}(zeros(n,n))
+	
+	#On récupère le tableau t
+	for i in 1:n
+		for j in 1:n
+			for k in 1:n
+				t[i,j] += k*y[i,j,k]
+			end
+		end
+	end
+	#On écrit
+	print("    ")
+	for j in 1:n
+		print(nord[j]," ")
+	end
+	println()
+    println("   ", "-"^(2*n+1)) 
+    
+	for i in 1:n
+		print(ouest[i]," | ")
+		for j in 1:n
+			print(t[i,j]," ")
+		end
+		println("| ",est[i])
+	end
+	println("   ", "-"^(2*n+1)) 
+	print("    ")
+	for j in 1:n
+		print(sud[j]," ")
+	end
+	println()
 end
 
 """

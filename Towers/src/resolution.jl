@@ -8,26 +8,81 @@ TOL = 0.00001
 """
 Solve an instance with CPLEX
 """
-function cplexSolve()
-
+function cplexSolve(nord,sud,ouest,est)
+	n = size(nord,1)
     # Create the model
-    m = Model(with_optimizer(CPLEX.Optimizer))
+    m = Model(CPLEX.Optimizer)
 
-    # TODO
-    println("In file resolution.jl, in method cplexSolve(), TODO: fix input and output, define the model")
-
+	@variable(m,x[1:n,1:n,1:n],Bin)
+	
+	#Une seule valeur par case
+	@constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,k] for k in 1:n) == 1)
+	#Chiffres différents sur une ligne
+	@constraint(m, [i in 1:n, k in 1:n], sum(x[i,j,k] for j in 1:n) == 1)
+	#Chiffres différents sur une colonne
+	@constraint(m, [j in 1:n, k in 1:n], sum(x[i,j,k] for i in 1:n) == 1)
+	#nb tours visibles respecté
+	tourVisiblesNord[j] = [(i,j,k) ]
+	@constraint(m, [j in 1:n], sum(x[i,j,k] for (i,j,k) in tourVisiblesNord[j]) == nord[j])
+	#@constraint(m, [j in 1:n], sum(x[i,j,k] for i in 1:n for k in 1:n if isVisible(x,i,j,k,"nord")) == nord[j])
+	#@constraint(m, [j in 1:n], sum(x[i,j,k] for i in 1:n for k in 1:n if isVisible(x,i,j,k,"sud")) == sud[j])
+	#@constraint(m, [i in 1:n], sum(x[i,j,k] for j in 1:n for k in 1:n if isVisible(x,i,j,k,"ouest")) == ouest[i])
+	#@constraint(m, [i in 1:n], sum(x[i,j,k] for j in 1:n for k in 1:n if isVisible(x,i,j,k,"est")) == est[i])
+	
+	@objective(m,Max,x[1,1,2])
+	
     # Start a chronometer
     start = time()
 
     # Solve the model
     optimize!(m)
+	
+	println(JuMP.value.(x))
 
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
-    return JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+    return x,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
     
 end
+
+function isVisible(x,i,j,k,bord)
+	if bord == "nord"
+		for i_ in 1:i-1
+			for k_ in k+1:size(x,1)
+				if x[i_,j,k_] == 1
+					return false
+				end
+			end
+		end
+	elseif bord == "sud"
+		for i_ in i+1:size(x,1)
+			for k_ in k+1:size(x,1)
+				if x[i_,j,k_] == 1
+					return false
+				end
+			end
+		end
+	elseif bord == "ouest"
+		for j_ in 1:j-1
+			for k_ in k+1:size(x,1)
+				if x[i,j_,k_] == 1
+					return false
+				end
+			end
+		end
+	elseif bord == "est"
+		for j_ in j:size(x,1)
+			for k_ in k+1:size(x,1)
+				if x[i,j_,k_] == 1
+					return false
+				end
+			end
+		end
+	end
+	return true	
+end
+
 
 """
 Heuristically solve an instance
