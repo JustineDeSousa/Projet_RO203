@@ -14,6 +14,10 @@ function cplexSolve(nord,sud,ouest,est)
     m = Model(CPLEX.Optimizer)
 
 	@variable(m,x[1:n,1:n,1:n],Bin)
+	@variable(m,yn[1:n,1:n],Bin)
+	@variable(m,ys[1:n,1:n],Bin)
+	@variable(m,ye[1:n,1:n],Bin)
+	@variable(m,yo[1:n,1:n],Bin)
 	
 	#Une seule valeur par case
 	@constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,k] for k in 1:n) == 1)
@@ -21,15 +25,37 @@ function cplexSolve(nord,sud,ouest,est)
 	@constraint(m, [i in 1:n, k in 1:n], sum(x[i,j,k] for j in 1:n) == 1)
 	#Chiffres différents sur une colonne
 	@constraint(m, [j in 1:n, k in 1:n], sum(x[i,j,k] for i in 1:n) == 1)
+
 	#nb tours visibles respecté
-	tourVisiblesNord[j] = [(i,j,k) ]
-	@constraint(m, [j in 1:n], sum(x[i,j,k] for (i,j,k) in tourVisiblesNord[j]) == nord[j])
+	
+	#Nord
+	@constraint(m, [j in 1:n], sum(yn[i,j] for i in 1:n)==nord[j])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yn[i,j]<=1-sum(x[i_,j,k_] for i_ in 1:i-1 for k_ in k:n)/(2*n)+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yn[i,j]>=1-sum(x[i_,j,k_] for i_ in 1:i-1 for k_ in k:n)-2*n*(1-x[i,j,k]))
+	
+	#Sud
+	@constraint(m, [j in 1:n], sum(ys[i,j] for i in 1:n)==sud[j])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], ys[i,j]<=1-sum(x[i_,j,k_] for i_ in i+1:n for k_ in k:n)/(2*n)+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], ys[i,j]>=1-sum(x[i_,j,k_] for i_ in i+1:n for k_ in k:n)-2*n*(1-x[i,j,k]))
+	
+	#Est
+	@constraint(m, [i in 1:n], sum(ye[i,j] for j in 1:n)==est[i])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], ye[i,j]<=1-sum(x[i,j_,k_] for j_ in j+1:n for k_ in k:n)/(2*n)+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], ye[i,j]>=1-sum(x[i,j_,k_] for j_ in j+1:n for k_ in k:n)-2*n*(1-x[i,j,k]))
+	
+	
+	#Ouest
+	@constraint(m, [i in 1:n], sum(yo[i,j] for j in 1:n)==ouest[i])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yo[i,j]<=1-sum(x[i,j_,k_] for j_ in 1:j-1 for k_ in k:n)/(2*n)+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yo[i,j]>=1-sum(x[i,j_,k_] for j_ in 1:j-1 for k_ in k:n)-2*n*(1-x[i,j,k]))
+	
+	
 	#@constraint(m, [j in 1:n], sum(x[i,j,k] for i in 1:n for k in 1:n if isVisible(x,i,j,k,"nord")) == nord[j])
 	#@constraint(m, [j in 1:n], sum(x[i,j,k] for i in 1:n for k in 1:n if isVisible(x,i,j,k,"sud")) == sud[j])
 	#@constraint(m, [i in 1:n], sum(x[i,j,k] for j in 1:n for k in 1:n if isVisible(x,i,j,k,"ouest")) == ouest[i])
 	#@constraint(m, [i in 1:n], sum(x[i,j,k] for j in 1:n for k in 1:n if isVisible(x,i,j,k,"est")) == est[i])
 	
-	@objective(m,Max,x[1,1,2])
+	@objective(m,Max,1)
 	
     # Start a chronometer
     start = time()
@@ -42,7 +68,10 @@ function cplexSolve(nord,sud,ouest,est)
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
-    return x,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+	println("yo",JuMP.value.(yo))
+	println("ye",JuMP.value.(ye))
+	println("ys",JuMP.value.(ys))
+    return x,yo,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
     
 end
 
