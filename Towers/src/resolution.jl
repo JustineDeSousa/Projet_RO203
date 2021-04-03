@@ -72,11 +72,12 @@ Heuristically solve an instance
 function heuristicSolve(nord,sud,ouest,est)
 	n = size(nord,1)
 	t = Array{Int64,2}(zeros(n,n))
-	
-	# True if the grid has completely been filled
+	initialize(t,nord,sud,ouest,est)
+
     gridFilled = false
+    gridStillFeasible = true
+	checkFeasibility = true
 	
-	# While the grid is not filled and it may still be solvable
     while !gridFilled && gridStillFeasible
 		# Coordinates of the most constrained cell
         mcCell = [-1 -1]
@@ -84,70 +85,55 @@ function heuristicSolve(nord,sud,ouest,est)
         # Values which can be assigned to the most constrained cell
         values = nothing
 		
-		# Randomly select a cell and a value
         l = ceil.(Int, n * rand())
         c = ceil.(Int, n * rand())
-        id = 1
-
+        
+		id = 1
         # For each cell of the grid, while a cell with 0 values has not been found
         while id <= n*n && (values == nothing || size(values, 1)  != 0)
-
-            # If the cell does not have a value
-            if t[l, c] == 0
-
-                # Get the values which can be assigned to the cell
+			if t[l, c] == 0
                 cValues = possibleValues(t, l, c, nord, sud, ouest, est)
-
-                # If it is the first cell or if it is the most constrained cell currently found
+                
                 if values == nothing || size(cValues, 1) < size(values, 1)
-
                     values = cValues
-                    mcCell = [l c]
+					mcCell = [l c]
+					println("mcCell = [",l,",",c,"]","\tvalues=",cValues)
                 end 
             end
-			# Go to the next cell                    
-            if c < n
-                c += 1
-            else
-                if l < n
-                    l += 1
-                    c = 1
-                else
-                    l = 1
-                    c = 1
-                end
-            end
+			l,c = nextCell(l,c,n)
             id += 1
 		end
+		
 		# If all the cell have a value
         if values == nothing
 
             gridFilled = true
             gridStillFeasible = true
         else
-
             # If a cell cannot be assigned any value
             if size(values, 1) == 0
                 gridStillFeasible = false
             else# Else assign a random value to the most constrained cell 
-                
-                newValue = ceil.(Int, rand() * size(values, 1))
+                println("Not all cells have a value\nNo cell with no valuable value")
+				newValue = ceil.(Int, rand() * size(values, 1))
+				println("mcCell = ",mcCell)
                 if checkFeasibility
                     gridStillFeasible = false
                     id = 1
                     while !gridStillFeasible && id <= size(values, 1)
                         t[mcCell[1], mcCell[2]] = values[rem(newValue, size(values, 1)) + 1]
-                        if isGridFeasible(t)
+						displaySolution(t,nord,sud,ouest,est)
+                        if isGridFeasible(t, nord, sud, ouest, est)
                             gridStillFeasible = true
                         else
                             newValue += 1
                         end
-
                         id += 1
                         
                     end
-                else 
+                else
                     t[mcCell[1], mcCell[2]] = values[newValue]
+					displaySolution(t,nord,sud,ouest,est)
                 end 
             end 
         end
@@ -155,10 +141,76 @@ function heuristicSolve(nord,sud,ouest,est)
     return t, gridStillFeasible
 end
 
+"""
+put the easy values in t
+"""
+function initialize(t,nord,sud,ouest,est)
+	println("---------- Initialization ----------")
+	n = size(t,1)
+	for i in 1:n
+		if ouest[i] == n
+			for j in 1:n
+				t[i,j] = j
+			end
+		elseif ouest[i] == 1
+			t[i,1] = n
+			if est[i] == 2
+				t[i,n] = n-1
+			end
+		end
+		if est[i] == n
+			for j in 1:n
+				t[i,j] = n-j+1
+			end
+		elseif est[i] == 1
+			t[i,n] = n
+			if ouest[i] == 2
+				t[i,1] = n-1
+			end
+		end
+		if nord[i] == n
+			for j in 1:n
+				t[j,i] = j
+			end
+		elseif nord[i] == 1
+			t[1,i] = n
+			if sud[i] == 2
+				t[n,i] = n-1
+			end
+		end
+		if sud[i] == n
+			for j in 1:n
+				t[j,i] = n-j+1
+			end
+		elseif sud[i] == 1
+			t[n,i] = n
+			if nord[i] == 2
+				t[1,i] = n-1
+			end
+		end
+	end
+	displaySolution(t,nord,sud,ouest,est)
+end
+
+function nextCell(l,c,n)         
+	if c < n
+		c += 1
+	else
+		if l < n
+			l += 1
+			c = 1
+		else
+			l = 1
+			c = 1
+		end
+	end
+	return l,c
+end
+
 function possibleValues(t::Array{Int, 2}, l::Int64, c::Int64, nord, sud, ouest, est)
-    values = Array{Int64, 1}()
+	values = Array{Int64, 1}()
     for v in 1:size(t, 1)
-        if isValid(t, l, c, v)
+        if isValid(t, l, c, v, nord, sud, ouest, est)
             values = append!(values, v)
         end
     end 
@@ -176,7 +228,7 @@ Arguments
 Return: true if t[l, c] can be set to v; false otherwise
 """
 function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ouest, est)
-    n = size(t, 1)
+	n = size(t, 1)
     isValid = true
 	
     # Test if v appears in column c
@@ -196,33 +248,79 @@ function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ou
         end
         j += 1
     end
-    
+	
     # Test if the add of v still fits the constraints
-    
-    lTop = l - rem(l - 1, blockSize)
-    cLeft = c - rem(c - 1, blockSize)
+	t[l,c] = v
+	
+	nordSum = 0
+	towerMax = 0
+	for i in 1:n
+		if t[i,c] > towerMax
+			nordSum += 1
+			towerMax = t[i,c]
+		end
+	end
 
-    l2 = lTop
-    c2 = cLeft
+	sudSum = 0
+	towerMax = 0
+	for i in n:-1:1
+		if t[i,c] > towerMax
+			sudSum += 1
+			towerMax = t[i,c]
+		end
+	end
 
-    while isValid && l2 != lTop + blockSize
-        
-        if t[l2, c2] == v
-            isValid = false
-        end
+	ouestSum = 0
+	towerMax = 0
+	for i in 1:n
+		if t[l,i] > towerMax
+			ouestSum += 1
+			towerMax = t[l,i]
+		end
+	end
 
-        # Go to the next cell of the block
-        if c2 != cLeft + blockSize - 1
-            c2 += 1
-        else
-            l2 += 1
-            c2 = cLeft
-        end 
-    end
+	estSum = 0
+	towerMax = 0
+	for i in n:-1:1
+		if t[l,i] > towerMax
+			estSum += 1
+			towerMax = t[l,i]
+		end
+	end
 
-    return isValid
-    
+	if nordSum > nord[c] || sudSum > sud[c] || ouestSum > ouest[l] || estSum > est[l]
+		isValid = false
+	end
+	if !isValid
+		t[l,c] = 0
+	end
+    return isValid 
 end
+
+function isGridFeasible(t::Array{Int64, 2}, nord, sud, ouest, est)
+    n = size(t, 1)
+    isFeasible = true
+    l = 1
+    c = 1
+    while isFeasible && l <= n
+        if t[l, c] == 0
+            feasibleValueFound = false
+            v = 1
+            while !feasibleValueFound && v <= n
+                if isValid(t, l, c, v, nord, sud, ouest, est)
+                    feasibleValueFound = true
+                end
+                v += 1
+            end
+            if !feasibleValueFound
+                isFeasible = false
+            end 
+        end 
+        
+		l,c = nextCell(l,c,n)
+    end
+    return isFeasible
+end 
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
