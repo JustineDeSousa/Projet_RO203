@@ -13,11 +13,12 @@ function cplexSolve(nord,sud,ouest,est)
     # Create the model
     m = Model(CPLEX.Optimizer)
 
-	@variable(m,x[1:n,1:n,1:n],Bin)
-	@variable(m,yn[1:n,1:n],Bin)
-	@variable(m,ys[1:n,1:n],Bin)
-	@variable(m,ye[1:n,1:n],Bin)
-	@variable(m,yo[1:n,1:n],Bin)
+	@variable(m,x[1:n,1:n,1:n],Bin) # ==1 ssi (i,j) contient k
+	@variable(m,yn[1:n,1:n],Bin)	# ==1 ssi (i,j) visible depuis le nord
+	@variable(m,ys[1:n,1:n],Bin)	# ==1 ssi (i,j) visible depuis le sud
+	@variable(m,yo[1:n,1:n],Bin)	# ==1 ssi (i,j) visible depuis l'ouest
+	@variable(m,ye[1:n,1:n],Bin)	# ==1 ssi (i,j) visible depuis l'est
+	
 	
 	#Une seule valeur par case
 	@constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,k] for k in 1:n) == 1)
@@ -49,13 +50,7 @@ function cplexSolve(nord,sud,ouest,est)
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yo[i,j]<=1-sum(x[i,j_,k_] for j_ in 1:j-1 for k_ in k:n)/(2*n)+1-x[i,j,k])
 	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yo[i,j]>=1-sum(x[i,j_,k_] for j_ in 1:j-1 for k_ in k:n)-2*n*(1-x[i,j,k]))
 	
-	
-	#@constraint(m, [j in 1:n], sum(x[i,j,k] for i in 1:n for k in 1:n if isVisible(x,i,j,k,"nord")) == nord[j])
-	#@constraint(m, [j in 1:n], sum(x[i,j,k] for i in 1:n for k in 1:n if isVisible(x,i,j,k,"sud")) == sud[j])
-	#@constraint(m, [i in 1:n], sum(x[i,j,k] for j in 1:n for k in 1:n if isVisible(x,i,j,k,"ouest")) == ouest[i])
-	#@constraint(m, [i in 1:n], sum(x[i,j,k] for j in 1:n for k in 1:n if isVisible(x,i,j,k,"est")) == est[i])
-	
-	@objective(m,Max,1)
+	@objective(m,Max,x[1,1,1])
 	
     # Start a chronometer
     start = time()
@@ -63,65 +58,171 @@ function cplexSolve(nord,sud,ouest,est)
     # Solve the model
     optimize!(m)
 	
-	println(JuMP.value.(x))
-
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
-	println("yo",JuMP.value.(yo))
-	println("ye",JuMP.value.(ye))
-	println("ys",JuMP.value.(ys))
-    return x,yo,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+    return x,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
     
-end
-
-function isVisible(x,i,j,k,bord)
-	if bord == "nord"
-		for i_ in 1:i-1
-			for k_ in k+1:size(x,1)
-				if x[i_,j,k_] == 1
-					return false
-				end
-			end
-		end
-	elseif bord == "sud"
-		for i_ in i+1:size(x,1)
-			for k_ in k+1:size(x,1)
-				if x[i_,j,k_] == 1
-					return false
-				end
-			end
-		end
-	elseif bord == "ouest"
-		for j_ in 1:j-1
-			for k_ in k+1:size(x,1)
-				if x[i,j_,k_] == 1
-					return false
-				end
-			end
-		end
-	elseif bord == "est"
-		for j_ in j:size(x,1)
-			for k_ in k+1:size(x,1)
-				if x[i,j_,k_] == 1
-					return false
-				end
-			end
-		end
-	end
-	return true	
 end
 
 
 """
 Heuristically solve an instance
 """
-function heuristicSolve()
+function heuristicSolve(nord,sud,ouest,est)
+	n = size(nord,1)
+	t = Array{Int64,2}(zeros(n,n))
+	
+	# True if the grid has completely been filled
+    gridFilled = false
+	
+	# While the grid is not filled and it may still be solvable
+    while !gridFilled && gridStillFeasible
+		# Coordinates of the most constrained cell
+        mcCell = [-1 -1]
 
-    # TODO
-    println("In file resolution.jl, in method heuristicSolve(), TODO: fix input and output, define the model")
+        # Values which can be assigned to the most constrained cell
+        values = nothing
+		
+		# Randomly select a cell and a value
+        l = ceil.(Int, n * rand())
+        c = ceil.(Int, n * rand())
+        id = 1
+
+        # For each cell of the grid, while a cell with 0 values has not been found
+        while id <= n*n && (values == nothing || size(values, 1)  != 0)
+
+            # If the cell does not have a value
+            if t[l, c] == 0
+
+                # Get the values which can be assigned to the cell
+                cValues = possibleValues(t, l, c, nord, sud, ouest, est)
+
+                # If it is the first cell or if it is the most constrained cell currently found
+                if values == nothing || size(cValues, 1) < size(values, 1)
+
+                    values = cValues
+                    mcCell = [l c]
+                end 
+            end
+			# Go to the next cell                    
+            if c < n
+                c += 1
+            else
+                if l < n
+                    l += 1
+                    c = 1
+                else
+                    l = 1
+                    c = 1
+                end
+            end
+            id += 1
+		end
+		# If all the cell have a value
+        if values == nothing
+
+            gridFilled = true
+            gridStillFeasible = true
+        else
+
+            # If a cell cannot be assigned any value
+            if size(values, 1) == 0
+                gridStillFeasible = false
+            else# Else assign a random value to the most constrained cell 
+                
+                newValue = ceil.(Int, rand() * size(values, 1))
+                if checkFeasibility
+                    gridStillFeasible = false
+                    id = 1
+                    while !gridStillFeasible && id <= size(values, 1)
+                        t[mcCell[1], mcCell[2]] = values[rem(newValue, size(values, 1)) + 1]
+                        if isGridFeasible(t)
+                            gridStillFeasible = true
+                        else
+                            newValue += 1
+                        end
+
+                        id += 1
+                        
+                    end
+                else 
+                    t[mcCell[1], mcCell[2]] = values[newValue]
+                end 
+            end 
+        end
+	end
+    return t, gridStillFeasible
+end
+
+function possibleValues(t::Array{Int, 2}, l::Int64, c::Int64, nord, sud, ouest, est)
+    values = Array{Int64, 1}()
+    for v in 1:size(t, 1)
+        if isValid(t, l, c, v)
+            values = append!(values, v)
+        end
+    end 
+    return values
+end
+
+"""
+Test if cell (l, c) can be assigned value v
+
+Arguments
+- t: array of size n*n with values in [0, n] (0 if the cell is empty)
+- l, c: considered cell
+- v: value considered
+
+Return: true if t[l, c] can be set to v; false otherwise
+"""
+function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ouest, est)
+    n = size(t, 1)
+    isValid = true
+	
+    # Test if v appears in column c
+    i = 1
+    while isValid && i <= n
+        if t[i, c] == v
+            isValid = false
+        end
+        i += 1
+    end
+
+    # Test if v appears in line l
+    j = 1
+    while isValid && j <= n
+        if t[l, j] == v
+            isValid = false
+        end
+        j += 1
+    end
     
-end 
+    # Test if the add of v still fits the constraints
+    
+    lTop = l - rem(l - 1, blockSize)
+    cLeft = c - rem(c - 1, blockSize)
+
+    l2 = lTop
+    c2 = cLeft
+
+    while isValid && l2 != lTop + blockSize
+        
+        if t[l2, c2] == v
+            isValid = false
+        end
+
+        # Go to the next cell of the block
+        if c2 != cLeft + blockSize - 1
+            c2 += 1
+        else
+            l2 += 1
+            c2 = cLeft
+        end 
+    end
+
+    return isValid
+    
+end
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
