@@ -72,17 +72,28 @@ Argument
 function displaySolution(x::Array{VariableRef,3}, nord, sud, ouest, est)
 
     n = size(x, 1)
-    y = JuMP.value.(x)
 	t = Array{Int64,2}(zeros(n,n))
 	
 	#On récupère le tableau t
 	for i in 1:n
 		for j in 1:n
 			for k in 1:n
-				t[i,j] += k*y[i,j,k]
+				t[i,j] += k*round(JuMP.value(x[i,j,k]))
 			end
 		end
 	end
+	displaySolution(t,nord,sud,ouest,est)
+end
+"""
+Display heuristic solution
+
+Argument
+- t: 2-dimensional variables array such that t[i, j] = k if cell (i, j) has value k
+"""
+function displaySolution(t, nord, sud, ouest, est)
+
+    n = size(t, 1)
+	
 	#On écrit
 	print("    ")
 	for j in 1:n
