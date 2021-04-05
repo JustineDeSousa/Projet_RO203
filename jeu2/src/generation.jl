@@ -1,13 +1,5 @@
-# This file contains methods to generate a data set of instances (i.e., sudoku grids)
 #include("io.jl")
 
-"""
-Generate an n*n grid with a given density
-
-Argument
-- n: size of the grid
-- density: percentage in [0, 1] of initial values in the grid
-"""
 function generateInstance(n::Int64)
 	y =[[1 for i=1:n] for i=1:n]
 	x =Array{Int64}(zeros(n,n))
@@ -45,8 +37,7 @@ function generateInstance(n::Int64)
 			end
 		end
 	end
-	println("x:",x)
-	println("y:",y)
+	return x,y
 end 
 
 function isNumberValuable(t,i,j,k)
@@ -63,19 +54,7 @@ function isNumberValuable(t,i,j,k)
 	return true	
 end
 
-generateInstance(3)
 
-"""
-Generate all the instances
-
-Remark: a grid is generated only if the corresponding output file does not already exist
-"""
-function generateDataSet()
-
-    # TODO
-    println("In file generation.jl, in method generateDataSet(), TODO: generate an instance")
-    
-end
 function case_entouree_de_case_blanche(y,i::Int64, j::Int64, n::Int64)
 	b=1
 	if i-1>=1
@@ -215,3 +194,19 @@ function supprimer_doublons(e,liste)
 end
 
 
+
+
+
+generateInstance(3)
+
+"""
+Generate all the instances
+
+Remark: a grid is generated only if the corresponding output file does not already exist
+"""
+function generateDataSet()
+
+    # TODO
+    println("In file generation.jl, in method generateDataSet(), TODO: generate an instance")
+    
+end
