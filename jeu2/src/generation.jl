@@ -8,12 +8,55 @@ Argument
 - n: size of the grid
 - density: percentage in [0, 1] of initial values in the grid
 """
-function generateInstance(n::Int64, density::Float64)
-
-    # TODO
-    println("In file generation.jl, in method generateInstance(), TODO: generate an instance")
-    
+function generateInstance(n::Int64)
+	y =[[1 for i=1:n] for i=1:n]
+	x =Array{Int64}(zeros(n,n))
+	filledCases = 0
+	cases_noires=choix_cases_noires(y,n)
+	while(filledCases < n*n)
+		i = Int64(floor(filledCases/n)+1)
+		j = rem(filledCases,n)+1
+		if y[i][j]==0
+			filledCases+=1
+		else
+			valTested = Array{Int64}(zeros(0))
+			v = ceil.(Int, n * rand())
+			push!(valTested,v)
+			
+			while !isNumberValuable(x,i,j,v) && size(valTested,1) < n
+				v = ceil.(Int, n * rand())
+				if !(v in valTested)
+					push!(valTested,v)
+				end
+			end
+			x[i,j] = v
+			filledCases += 1
+			
+			if size(valTested,1) >= n
+				x = Array{Int64}(zeros(n,n))
+				filledCases = 0
+			end
+		end
+	end 
+	println("x:",x)
+	println("y:",y)
 end 
+
+function isNumberValuable(t,i,j,k)
+	for i_ in 1:size(t,1)
+		if t[i_,j] == k
+			return false
+		end
+	end
+	for j_ in 1:size(t,1)
+		if t[i,j_] == k
+			return false
+		end
+	end
+	return true	
+end
+
+generateInstance(3)
 
 """
 Generate all the instances
@@ -145,7 +188,6 @@ function choix_cases_noires(y,n)
 		end
 		if is_graph_connexe(y,n)
 			push!(cases_noires,(i,j))
-			k=0
 		else
 			y[i][j]=1	
 		end
@@ -165,4 +207,4 @@ function supprimer_doublons(e,liste)
 	return liste
 end
 
-"choix_cases_noires(y,5)"
+
