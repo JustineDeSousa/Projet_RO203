@@ -8,24 +8,44 @@ TOL = 0.00001
 """
 Solve an instance with CPLEX
 """
-function cplexSolve()
-
+function cplexSolve(x)
+	n = size(x,1)
     # Create the model
-    m = Model(with_optimizer(CPLEX.Optimizer))
+    m = Model(CPLEX.Optimizer)
+	@variable(m,y[1:n,1:n],Bin)	# ==1 ssi (i,j) blanche
+	
+	#Chiffres différents sur une ligne, zero mis à part
+	@constraint(m, [k in 1:n, i in 1:n], sum(y[i,j] for j in 1:n if x[i,j]==k) <= 1)
+	#Chiffres différents sur une colonne, zero mis à part
+	@constraint(m, [j in 1:n, k in 1:n], sum(y[i,j] for i in 1:n if x[i,j]==k) <= 1)
 
-    # TODO
-    println("In file resolution.jl, in method cplexSolve(), TODO: fix input and output, define the model")
 
+	#pas deux cases voisines noires
+	@constraint(m,[i in 1:n-1, j in  1:n], y[i,j]+y[i+1,j]>=1)
+	@constraint(m,[j in 1:n-1, i in 1:n], y[i,j]+y[i,j+1]>=1)
+	
+	#contrainte de connexité à réfléchir
+	
+	@objective(m,Max,1)
+	
     # Start a chronometer
     start = time()
 
     # Solve the model
     optimize!(m)
-
+	
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
-    return JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+	for i in 1:n
+		for j in 1:n
+			print(JuMP.value(y[i,j]))
+			print("  ")
+		end
+		println("")
+	end
+    return y,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+    
     
 end
 

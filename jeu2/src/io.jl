@@ -1,8 +1,8 @@
-# This file contains functions related to reading, writing and displaying a grid and experimental results
 
-#using JuMP
-#using Plots
-#import GR
+
+using JuMP
+using Plots
+import GR
 
 """
 Read an instance from an input file
@@ -59,6 +59,6 @@ function displayGrid(x,y)
 		end
 		println("|")
 	end
-	println()
+	
     println(" ","-"^(2*n+1))
 end
