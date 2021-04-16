@@ -126,9 +126,21 @@ Remark: a grid is generated only if the corresponding output file does not alrea
 """
 function generateDataSet()
 
-    # TODO
-    println("In file generation.jl, in method generateDataSet(), TODO: generate an instance")
-    
+    # For each grid size considered
+    for size in [4,5,6]
+
+		# Generate 10 instances
+		for instance in 1:10
+			fileName = "../data/instance_t" * string(size) * "_" * string(instance) * ".txt"
+
+			if !isfile(fileName)
+				println("-- Generating file " * fileName)
+				nord,sud,ouest,est = generateInstance(size)
+				saveInstance(nord, sud, ouest, est, fileName)
+			end 
+		end
+	end
 end
 
+generateDataSet()
 

@@ -1,4 +1,4 @@
-# This file contains functions related to reading, writing and displaying a grid and experimental results
+
 
 using JuMP
 using Plots
@@ -11,7 +11,8 @@ Read an instance from an input file
 inputFile: path of the input file
 """
 function readInputFile(inputFile::String)
-
+	
+	
     # Open the input file
     datafile = open(inputFile)
 
@@ -19,210 +20,16 @@ function readInputFile(inputFile::String)
     close(datafile)
 	
 	n = length(split(data[1], ","))
-    towers = Array{Int64}(undef, n, n, n)
-	
-	nord= 	map(x->parse(Int64,x),split(data[1],","))
-	sud = 	map(x->parse(Int64,x),split(data[2],","))
-	ouest = map(x->parse(Int64,x),split(data[3],","))
-	est = 	map(x->parse(Int64,x),split(data[4],","))
-	
-	return nord, sud, ouest, est
+	x = zeros(Int,n,n)
 
-end
-
-"""
-Display a grid represented by a 2-dimensional array
-
-Argument:
-- t: array of size n*n with values in [0, n] (0 if the cell is empty)
-"""
-function displayGrid(nord,sud,ouest,est)
-
-    n = size(nord, 1)
-    
-	print("    ")
-	for j in 1:n
-		print(nord[j]," ")
-	end
-	println()
-    println("   ", "-"^(2*n+1)) 
-    
-	for i in 1:n
-		print(ouest[i]," | ")
-		for j in 1:n
-			print("  ")
-		end
-		println("| ",est[i])
-	end
-	println("   ", "-"^(2*n+1)) 
-	print("    ")
-	for j in 1:n
-		print(sud[j]," ")
-	end
-	println()
-    
-end
-
-"""
-Display cplex solution
-
-Argument
-- x: 3-dimensional variables array such that x[i, j, k] = 1 if cell (i, j) has value k
-"""
-function displaySolution(x::Array{VariableRef,3}, nord, sud, ouest, est)
-
-    n = size(x, 1)
-	t = Array{Int64,2}(zeros(n,n))
-	
-	#On récupère le tableau t
-	for i in 1:n
-		for j in 1:n
-			for k in 1:n
-				t[i,j] += k*round(JuMP.value(x[i,j,k]))
-			end
-		end
-	end
-	displaySolution(t,nord,sud,ouest,est)
-end
-"""
-Display heuristic solution
-
-Argument
-- t: 2-dimensional variables array such that t[i, j] = k if cell (i, j) has value k
-"""
-function displaySolution(t, nord, sud, ouest, est)
-
-    n = size(t, 1)
-	
-	#On écrit
-	print("    ")
-	for j in 1:n
-		print(nord[j]," ")
-	end
-	println()
-    println("   ", "-"^(2*n+1)) 
-    
-	for i in 1:n
-		print(ouest[i]," | ")
-		for j in 1:n
-			print(t[i,j]," ")
-		end
-		println("| ",est[i])
-	end
-	println("   ", "-"^(2*n+1)) 
-	print("    ")
-	for j in 1:n
-		print(sud[j]," ")
-	end
-	println()
-end
-
-"""
-Save a grid in a text file
-
-Argument
-- t: 2-dimensional array of size n*n
-- outputFile: path of the output file
-"""
-function saveInstance(nord, sud, ouest, est, outputFile::String)
-
-    n = size(nord, 1)
-
-    # Open the output file
-    writer = open("./data/"*outputFile, "w")
-
-	for i in 1:n
-		print(writer,nord[i])
-		if(i<n)
-			print(writer,",")
-		end
-	end
-	println(writer)
-	for i in 1:n
-		print(writer,sud[i])
-		if(i<n)
-			print(writer,",")
-		end
-	end
-	println(writer)
-	for i in 1:n
-		print(writer,ouest[i])
-		if(i<n)
-			print(writer,",")
-		end
-	end
-	println(writer)
-	for i in 1:n
-		print(writer,est[i])
-		if(i<n)
-			print(writer,",")
-		end
-	end
-    close(writer)
-    
-end 
-
-
-
-"""
-Write a solution in an output stream
-
-Arguments
-- fout: the output stream (usually an output file)
-- x: 3-dimensional variables array such that x[i, j, k] = 1 if cell (i, j) has value k
-"""
-function writeSolution(fout::IOStream, x::Array{VariableRef,3})
-
-    # Convert the solution from x[i, j, k] variables into t[i, j] variables
-    n = size(x, 1)
-    t = Array{Int64}(undef, n, n)
-    
-    for l in 1:n
-        for c in 1:n
-            for k in 1:n
-                if JuMP.value(x[l, c, k]) > TOL
-                    t[l, c] = k
-                end
-            end
-        end 
+    # For each line of the input file
+    for i in 1:n
+		x[i,:] = map(x->parse(Int64,x),split(data[i],",")) 
     end
-
-    # Write the solution
-    writeSolution(fout, t)
-
+	return x
 end
 
-"""
-Write a solution in an output stream
-
-Arguments
-- fout: the output stream (usually an output file)
-- t: 2-dimensional array of size n*n
-"""
-function writeSolution(fout::IOStream, t::Array{Int64, 2})
-    
-   println(fout, "t = [")
-    n = size(t, 1)
-    
-    for l in 1:n
-
-        print(fout, "[ ")
-        
-        for c in 1:n
-            print(fout, string(t[l, c]) * " ")
-        end 
-
-        endLine = "]"
-
-        if l != n
-            endLine *= ";"
-        end
-
-        println(fout, endLine)
-    end
-
-    println(fout, "]")
-end 
+x = readInputFile("./data/instance_t3.txt")
 
 """
 Create a pdf file which contains a performance diagram associated to the results of the ../res folder
@@ -236,6 +43,144 @@ Prerequisites:
 - Each text file correspond to the resolution of one instance
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
+
+function displayGrid(x::Array{Int64})
+
+    n = size(x, 1)
+    
+	
+	println(" ","-"^(2*n+1)) 
+	for i in 1:n
+		print("| ")
+		for j=1:n
+			print(x[i,j]," ")
+		end
+		println("|")
+	end
+	
+    println(" ","-"^(2*n+1))
+	
+end
+
+println("displayGrid:")
+displayGrid(x)
+
+function displaySolution(x::Array{Int64},y::Array{Int64})
+
+    n = size(x, 1) #nb lignes de x = 3
+    
+	
+	println(" ","-"^(2*n+1)) 
+	for i in 1:n
+		print("| ")
+		for j=1:n
+			if y[i,j]==1
+				print(x[i,j]," ")
+			else
+				print("* ")
+			end
+		end
+		println("|")
+	end
+	
+    println(" ","-"^(2*n+1))
+	
+end
+
+println("displaySolution:")
+y = [ 1 1 0 ; 0 1 1 ; 1 1 0 ]
+displaySolution(x,y)
+
+
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+- x: 3-dimensional variables array such that x[i, j, k] = 1 if cell (i, j) has value k
+"""
+function writeSolution(fout::IOStream, y::Array{VariableRef,2})
+
+    # Convert the solution from x[i, j, k] variables into t[i, j] variables
+    n = size(y, 1)
+    t = Array{Int64}(zeros(Int,n,n))
+    
+    for i in 1:n
+        for j in 1:n
+			if JuMP.value(y[i,j]) > 0
+				t[i,j] = 1
+			end
+        end 
+    end
+
+    # Write the solution
+    writeSolution(fout, t)
+
+end
+
+
+
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+- t: 2-dimensional array of size n*n
+"""
+function writeSolution(fout::IOStream, y::Array{Int64, 2})
+    
+    println(fout, "y = [")
+    n = size(y, 1)
+    
+    for i in 1:n
+
+        print(fout, "[ ")
+        
+        for j in 1:n
+            print(fout, string(y[i,j]) * " ")
+        end 
+
+        endLine = "]"
+
+        if i != n
+            endLine *= ";"
+        end
+
+        println(fout, endLine)
+    end
+
+    println(fout, "]")
+end 
+
+
+"""
+Save a grid in a text file
+
+Argument
+- t: 2-dimensional array of size n*n
+- outputFile: path of the output file
+"""
+function saveInstance(x, outputFile::String)
+
+    n = size(x, 1)
+
+    # Open the output file
+    writer = open("./data/"*outputFile, "w")
+
+	for i in 1:n
+		for j in 1:n
+			print(writer,x[i,j])
+			if(j<n)
+				print(writer,",")
+			end
+		end
+		println(writer)
+	end
+    close(writer)    
+end
+
+saveInstance(x,"intance_X.txt")
+
 function performanceDiagram(outputFile::String)
 
     resultFolder = "../res/"
@@ -535,4 +480,3 @@ function resultsArray(outputFile::String)
     close(fout)
     
 end 
-
