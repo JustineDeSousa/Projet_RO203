@@ -29,7 +29,7 @@ function readInputFile(inputFile::String)
 	return x
 end
 
-x = readInputFile("./data/instance_t3.txt")
+
 
 """
 Create a pdf file which contains a performance diagram associated to the results of the ../res folder
@@ -62,8 +62,7 @@ function displayGrid(x::Array{Int64})
 	
 end
 
-println("displayGrid:")
-displayGrid(x)
+
 
 function displaySolution(x::Array{Int64},y::Array{Int64})
 
@@ -87,9 +86,9 @@ function displaySolution(x::Array{Int64},y::Array{Int64})
 	
 end
 
-println("displaySolution:")
+"""println("displaySolution:")
 y = [ 1 1 0 ; 0 1 1 ; 1 1 0 ]
-displaySolution(x,y)
+displaySolution(x,y)"""
 
 
 """
@@ -179,7 +178,7 @@ function saveInstance(x, outputFile::String)
     close(writer)    
 end
 
-saveInstance(x,"intance_X.txt")
+"""saveInstance(x,"intance_X.txt")"""
 
 function performanceDiagram(outputFile::String)
 
