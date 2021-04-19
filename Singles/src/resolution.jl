@@ -10,30 +10,53 @@ Solve an instance with CPLEX
 """
 function cplexSolve(x)
 	n = size(x,1)
-    # Create the model
-    m = Model(CPLEX.Optimizer)
-	@variable(m,y[1:n,1:n],Bin)	# ==1 ssi (i,j) blanche
+	y_ = zeros(Int,n,n)
+	it = 0
+	y_mem=[]
 	
-	#Chiffres différents sur une ligne, zero mis à part
-	@constraint(m, [k in 1:n, i in 1:n], sum(y[i,j] for j in 1:n if x[i,j]==k) <= 1)
-	#Chiffres différents sur une colonne, zero mis à part
-	@constraint(m, [j in 1:n, k in 1:n], sum(y[i,j] for i in 1:n if x[i,j]==k) <= 1)
+	# Start a chronometer
+	start = time()
+		
+	while !is_graph_connexe(y_) && it < 10
+		println("it=",it)
+		# Create the model
+		m = Model(CPLEX.Optimizer)
+		
+		@variable(m,y[1:n,1:n],Bin)	# ==1 ssi (i,j) blanche
+		
+		#Chiffres différents sur une ligne, zero mis à part
+		@constraint(m, [k in 1:n, i in 1:n], sum(y[i,j] for j in 1:n if x[i,j]==k) <= 1)
+		#Chiffres différents sur une colonne, zero mis à part
+		@constraint(m, [j in 1:n, k in 1:n], sum(y[i,j] for i in 1:n if x[i,j]==k) <= 1)
 
 
-	#pas deux cases voisines noires
-	@constraint(m,[i in 1:n-1, j in  1:n], y[i,j]+y[i+1,j]>=1)
-	@constraint(m,[j in 1:n-1, i in 1:n], y[i,j]+y[i,j+1]>=1)
-	
-	#contrainte de connexité à réfléchir
-	
-	@objective(m,Max,1)
-	
-    # Start a chronometer
-    start = time()
+		#pas deux cases voisines noires
+		@constraint(m,[i in 1:n-1, j in  1:n], y[i,j]+y[i+1,j]>=1)
+		@constraint(m,[j in 1:n-1, i in 1:n], y[i,j]+y[i,j+1]>=1)
 
-    # Solve the model
-    optimize!(m)
-	
+		
+		#contrainte de connexité à réfléchir
+		println("y_mem=", y_mem)
+		for y_m in y_mem
+			@constraint(m, sum( 1  for i in 1:n for j in 1:n if (y[i,j] != y_m[i,j]) ) >= 1)
+		end
+		
+		@objective(m,Max,y[1,1])
+		
+		
+
+		# Solve the model
+		optimize!(m)
+		
+		y_ = JuMP.value.(y)
+		push!(y_mem,y)
+		println(y_mem)
+		isOptimal = JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT
+		println("isOptimal= ",isOptimal)
+		
+		displaySolution(x,map(x->round(Int64,x),y_) )
+		it += 1
+	end
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
@@ -44,20 +67,12 @@ function cplexSolve(x)
 		# end
 		# println("")
 	# end
-    return y,JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+    return y_, isOptimal, time() - start
     
     
 end
 
-"""
-Heuristically solve an instance
-"""
-function heuristicSolve()
 
-    # TODO
-    println("In file resolution.jl, in method heuristicSolve(), TODO: fix input and output, define the model")
-    
-end 
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
@@ -164,4 +179,7 @@ function solveDataSet()
     end 
 end
 
-solveDataSet()
+x = readInputFile("./data/instance_t3.txt")
+y, isOptimal, resolutionTime = cplexSolve(x)
+#displaySolution(x,map(x->round(Int64,x),y) )
+#solveDataSet()

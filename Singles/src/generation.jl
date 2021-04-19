@@ -4,7 +4,7 @@ function generateInstance(n::Int64)
 	y = ones(Int,n,n)
 	x = Array{Int64}(zeros(n,n))
 	filledCases = 0
-	cases_noires = choix_cases_noires(y,n)
+	cases_noires = choix_cases_noires(y)
 	while(filledCases < n*n)
 		i = Int64(floor(filledCases/n)+1)
 		j = rem(filledCases,n)+1
@@ -55,7 +55,8 @@ function isNumberValuable(t,i,j,k)
 end
 
 
-function case_entouree_de_case_blanche(y,i::Int64, j::Int64, n::Int64)
+function case_entouree_de_case_blanche(y,i::Int64, j::Int64)
+	n = size(y,1)
 	b=1
 	if i-1>=1
 		if y[i-1,j]==0
@@ -81,7 +82,8 @@ function case_entouree_de_case_blanche(y,i::Int64, j::Int64, n::Int64)
 
 end
 
-function voisins_blancs(y,i::Int64, j::Int64, n::Int64)
+function voisins_blancs(y,i::Int64, j::Int64)
+	n = size(y,1)
 	v=Tuple{Int64,Int64}[]
 	if i-1>=1
 		if y[i-1,j]==1
@@ -106,7 +108,8 @@ function voisins_blancs(y,i::Int64, j::Int64, n::Int64)
 	return v
 
 end
-function liste_sommets_blancs(y,n)
+function liste_sommets_blancs(y)
+	n = size(y,1)
 	liste_sommets_blancs=Tuple{Int64,Int64}[]
 	for i in 1:n
 		for j in 1:n
@@ -118,7 +121,8 @@ function liste_sommets_blancs(y,n)
 	return liste_sommets_blancs
 end
 
-function arbre_connexe(y,n)
+function arbre_connexe(y)
+	n = size(y,1)
 	sommets_a_voir = Tuple{Int64,Int64}[]
 	sommets_visites = Tuple{Int64,Int64}[]
 	if y[1,1] == 1
@@ -132,7 +136,7 @@ function arbre_connexe(y,n)
 		if !(sommet_traite in sommets_visites)
 			i,j=sommet_traite
 			push!(sommets_visites,sommet_traite)
-			voisins=voisins_blancs(y,i,j,n)
+			voisins=voisins_blancs(y,i,j)
 			for l in voisins
 				if !(l in sommets_visites)
 					if !(l in sommets_a_voir)
@@ -145,19 +149,21 @@ function arbre_connexe(y,n)
 	return sommets_visites
 end
 
-function is_graph_connexe(y,n)
-	i = size(arbre_connexe(y,n))
-	j = size(liste_sommets_blancs(y,n))
+function is_graph_connexe(y)
+	n = size(y,1)
+	i = size(arbre_connexe(y))
+	j = size(liste_sommets_blancs(y))
 	return i==j
 end
 
-function choix_cases_noires(y,n)
+function choix_cases_noires(y)
+	n = size(y,1)
 	liste_cases_admissibles = Tuple{Int64,Int64}[]
 	cases_noires = Tuple{Int64,Int64}[]
 	for i=1:n
 		for j=1:n
 			if y[i,j]==1
-				if case_entouree_de_case_blanche(y,i,j,n) == 1
+				if case_entouree_de_case_blanche(y,i,j) == 1
 					push!(liste_cases_admissibles,(i,j))
 				end
 			end
@@ -169,10 +175,10 @@ function choix_cases_noires(y,n)
 		i,j = liste_cases_admissibles[r]
 		y[i,j] = 0
 		deleteat!(liste_cases_admissibles,r)
-		for e in voisins_blancs(y,i,j,n)
+		for e in voisins_blancs(y,i,j)
 			supprimer_doublons(e,liste_cases_admissibles)
 		end
-		if is_graph_connexe(y,n)
+		if is_graph_connexe(y)
 			push!(cases_noires,(i,j))
 		else
 			y[i,j]=1	
@@ -222,4 +228,4 @@ function generateDataSet()
 	end
 end
 
-generateDataSet()
+#generateDataSet()

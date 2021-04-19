@@ -1,4 +1,22 @@
 include("generation.jl")
+
+"tries many times heuristicSolve1. if solved, prints the grid, else prints:not solved"
+function heuristicSolve(grille)
+	b=0
+	n=size(grille,1)
+	y=ones(Int,n,n)
+	k=0
+	while b==0 && k<=10*n
+		k=k+1
+		b,y=heuristicSolve1(grille)
+	end
+	if b==0
+		println("not solved")
+	else
+	displaySolution(grille,y)
+	end
+end
+
 "tries to solve ones, and return b=0 if not solved, b=1 is solved"
 
 function heuristicSolve1(grille)
@@ -6,7 +24,7 @@ function heuristicSolve1(grille)
 	y=ones(Int,n,n)
 	kv=0
 	cases_noires=[]
-	doublons=liste_doublons(grille,n)
+	doublons=liste_doublons(grille)
 	while (doublons!=[])&&(kv<=3*n)
 		kv+=1
 		x,kx=random_choose_in_list(doublons)
@@ -26,43 +44,30 @@ function heuristicSolve1(grille)
 	end
 end 
 
-"tries many times heuristicSolve1. if solved, prints the grid, else prints:not solved"
-function heuristicSolve(grille)
-	b=0
-	n=size(grille,1)
-	y=ones(Int,n,n)
-	k=0
-	while b==0 && k<=10*n
-		k=k+1
-		b,y=heuristicSolve1(grille)
-	end
-	if b==0
-		println("not solved")
-	else
-	displaySolution(grille,y)
-	end
-end
 
-function liste_doublons(grille,n)
+
+function liste_doublons(grille)
+	n = size(grille,1)
 	doublons=[]
 	for i in 1:n
 		for val in 1:n
-			if doublon_ligne(i,grille,n,val)!=[]
-				append!(doublons,[doublon_ligne(i,grille,n,val)])
+			if doublon_ligne(i,grille,val)!=[]
+				append!(doublons,[doublon_ligne(i,grille,val)])
 			end
 		end
 	end
 	for j in 1:n
 		for val in 1:n
-			if doublon_colone(j,grille,n,val)!=[]
-				append!(doublons,[doublon_colone(j,grille,n,val)])
+			if doublon_colone(j,grille,val)!=[]
+				append!(doublons,[doublon_colone(j,grille,val)])
 			end
 		end
 	end
 	
 	return doublons
 end
-function doublon_ligne(i,grille,n,val)
+function doublon_ligne(i,grille,val)
+	n = size(grille,1)
 	mem=[]
 	for j in 1:n
 		if grille[i,j]==val
@@ -75,7 +80,8 @@ function doublon_ligne(i,grille,n,val)
 		return []
 	end
 end
-function doublon_colone(j,grille,n,val)
+function doublon_colone(j,grille,val)
+	n = size(grille,1)
 	mem=[]
 	for i in 1:n
 		if grille[i,j]==val
@@ -111,7 +117,7 @@ function liste_cases_admissibles(y,x)
 	cases_admissibles=[]
 	
 	for (i,j) in x
-		if case_entouree_de_case_blanche(y,i,j,n)==1
+		if case_entouree_de_case_blanche(y,i,j)==1
 			append!(cases_admissibles,[(i,j)])
 		end
 	end
@@ -129,7 +135,7 @@ function supprimer_doubons_de_x(grille,y,x)
 		if cases_admissibles!=[]
 		(i,j),k=random_choose_in_list(cases_admissibles)
 		y[i,j]=0
-			if is_graph_connexe(y,n) "pb entre y et cases_noires"
+			if is_graph_connexe(y) 
 				append!(cases_noires,[(i,j)])
 				supprimer_doublons((i,j),x)
 				cases_admissibles=liste_cases_admissibles(y,x)
