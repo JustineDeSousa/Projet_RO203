@@ -129,7 +129,7 @@ Remark: a grid is generated only if the corresponding output file does not alrea
 function generateDataSet()
 
     # For each grid size considered
-    for size in [4,5,6]
+    for size in [5,6,7,8]
 
 		# Generate 10 instances
 		for instance in 1:10
@@ -144,5 +144,5 @@ function generateDataSet()
 	end
 end
 
-#generateDataSet()
+generateDataSet()
 

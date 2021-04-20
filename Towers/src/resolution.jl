@@ -348,7 +348,6 @@ function solveDataSet()
     # Create each result folder if it does not exist
     for folder in resolutionFolder
         if !isdir(folder)
-			println(folder)
             mkdir(folder)
         end
     end
@@ -362,17 +361,14 @@ function solveDataSet()
         
         println("-- Resolution of ", file)
         nord,sud,ouest,est = readInputFile(dataFolder * file)
-		println(dataFolder * file)
         
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
             
             outputFile = resolutionFolder[methodId] * "/" * file
-			println("outputFile = ", outputFile)
-			println("methodId = ", methodId)
+			
             # If the instance has not already been solved by this method
             if !isfile(outputFile)
-				println("if !isfile(outputFile)")
                 fout = open(outputFile, "w")  
 				
                 resolutionTime = -1
@@ -380,7 +376,6 @@ function solveDataSet()
                 
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
-					println("if resolutionMethod[methodId] == cplex")
                     # Solve it and get the results
                     x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
                     
@@ -391,8 +386,6 @@ function solveDataSet()
 
                 # If the method is one of the heuristics
                 else
-                    
-                   
                     isSolved = false
                     solution = []
 
@@ -424,22 +417,23 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
-            #include(outputFile)
+            include(outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         
     end 
 end
 
-#solveDataSet()
+solveDataSet()
+performanceDiagram("D:/M1/RO203/Projet_RO203/Towers/diagramme.jpg")
 
 #filename = "./data/instance_t4_2.txt"
 #nord,sud,ouest,est = readInputFile(filename)
-nord,sud,ouest,est = generateInstance(9)
-displayGrid(nord,sud,ouest,est)
-x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
-println("====== Solution avec CPLEX ======")
-displaySolution(x,nord,sud,ouest,est)
-t, isOptimal = heuristicSolve(nord,sud,ouest,est)
-println("== Solution avec l'heuristique ==")
-displaySolution(x,nord,sud,ouest,est)
+# nord,sud,ouest,est = generateInstance(9)
+# displayGrid(nord,sud,ouest,est)
+# x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
+# println("====== Solution avec CPLEX ======")
+# displaySolution(x,nord,sud,ouest,est)
+# t, isOptimal = heuristicSolve(nord,sud,ouest,est)
+# println("== Solution avec l'heuristique ==")
+# displaySolution(x,nord,sud,ouest,est)
