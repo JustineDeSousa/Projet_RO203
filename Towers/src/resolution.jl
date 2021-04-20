@@ -1,3 +1,5 @@
+#Pour executer le code:
+#include("./src/generation.jl")
 # This file contains methods to solve an instance (heuristically or with CPLEX)
 using CPLEX
 
@@ -78,13 +80,10 @@ function heuristicSolve(nord,sud,ouest,est)
     gridStillFeasible = true
 	checkFeasibility = true
 	
-	
+	#Tant que la grille n'est pas remplie et qu'elle est toujours valide
     while !gridFilled && gridStillFeasible
-		# Coordinates of the most constrained cell
-        mcCell = [-1 -1]
-
-        # Values which can be assigned to the most constrained cell
-        values = nothing
+        mcCell = [-1 -1]	# Coordinates of the most constrained cell
+        values = nothing	# Values which can be assigned to the mcCell
 		
         l = ceil.(Int, n * rand())
         c = ceil.(Int, n * rand())
@@ -92,38 +91,34 @@ function heuristicSolve(nord,sud,ouest,est)
 		id = 1
         # For each cell of the grid, while a cell with 0 values has not been found
         while id <= n*n && (values == nothing || size(values, 1)  != 0)
+			#Si on n'a pas déjà visité cette case
 			if t[l, c] == 0
                 cValues = possibleValues(t, l, c, nord, sud, ouest, est)
-                
+                #Si c'est la 1ère case ou si on a trouvé une most constrained cell
                 if values == nothing || size(cValues, 1) < size(values, 1)
                     values = cValues
 					mcCell = [l c]
-					println("mcCell = [",l,",",c,"]","\tvalues=",cValues)
                 end 
             end
 			l,c = nextCell(l,c,n)
             id += 1
 		end
 		
-		# If all the cell have a value
+		# If all the cells have a value
         if values == nothing
-
             gridFilled = true
             gridStillFeasible = true
         else
             # If a cell cannot be assigned any value
             if size(values, 1) == 0
                 gridStillFeasible = false
-            else# Else assign a random value to the most constrained cell 
-                println("Not all cells have a value\nNo cell with no valuable value")
+            else# Else assign a random value to the most constrained cell
 				newValue = ceil.(Int, rand() * size(values, 1))
-				println("mcCell = ",mcCell)
                 if checkFeasibility
                     gridStillFeasible = false
                     id = 1
                     while !gridStillFeasible && id <= size(values, 1)
                         t[mcCell[1], mcCell[2]] = values[rem(newValue, size(values, 1)) + 1]
-						displaySolution(t,nord,sud,ouest,est)
                         if isGridFeasible(t, nord, sud, ouest, est)
                             gridStillFeasible = true
                         else
@@ -134,8 +129,7 @@ function heuristicSolve(nord,sud,ouest,est)
                     end
                 else
                     t[mcCell[1], mcCell[2]] = values[newValue]
-					displaySolution(t,nord,sud,ouest,est)
-                end 
+                end
             end 
         end
 	end
@@ -146,7 +140,7 @@ end
 put the easy values in t
 """
 function initialize(t,nord,sud,ouest,est)
-	println("---------- Initialization ----------")
+	#println("----- Initialization -----")
 	n = size(t,1)
 	for i in 1:n
 		if ouest[i] == n
@@ -190,7 +184,6 @@ function initialize(t,nord,sud,ouest,est)
 			end
 		end
 	end
-	displaySolution(t,nord,sud,ouest,est)
 end
 
 function nextCell(l,c,n)         
@@ -209,11 +202,15 @@ function nextCell(l,c,n)
 end
 
 function possibleValues(t::Array{Int, 2}, l::Int64, c::Int64, nord, sud, ouest, est)
-	values = Array{Int64, 1}()
+	values = nothing
     for v in 1:size(t, 1)
         if isValid(t, l, c, v, nord, sud, ouest, est)
-            values = append!(values, v)
-        end
+			if values == nothing
+				values = [v]
+			else
+				values = append!(values, v)
+			end
+		end
     end 
     return values
 end
@@ -318,7 +315,13 @@ function isGridFeasible(t::Array{Int64, 2}, nord, sud, ouest, est)
             end 
         end 
         
-		l,c = nextCell(l,c,n)
+		# Go to the next cell
+        if c < n
+            c += 1
+        else
+            l += 1
+            c = 1
+        end
     end
     return isFeasible
 end 
@@ -428,4 +431,15 @@ function solveDataSet()
     end 
 end
 
-solveDataSet()
+#solveDataSet()
+
+#filename = "./data/instance_t4_2.txt"
+#nord,sud,ouest,est = readInputFile(filename)
+nord,sud,ouest,est = generateInstance(9)
+displayGrid(nord,sud,ouest,est)
+x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
+println("====== Solution avec CPLEX ======")
+displaySolution(x,nord,sud,ouest,est)
+t, isOptimal = heuristicSolve(nord,sud,ouest,est)
+println("== Solution avec l'heuristique ==")
+displaySolution(x,nord,sud,ouest,est)

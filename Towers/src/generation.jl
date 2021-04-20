@@ -1,3 +1,5 @@
+#Pour executer le code:
+#include("./src/generation.jl")
 # This file contains methods to generate a data set of instances (i.e., sudoku grids)
 include("io.jl")
 
@@ -142,5 +144,5 @@ function generateDataSet()
 	end
 end
 
-generateDataSet()
+#generateDataSet()
 
