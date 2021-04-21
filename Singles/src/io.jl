@@ -1,4 +1,7 @@
-
+#======= Lancer le programme =======#
+# path = "D:/M1/" A SPECIFIER
+# cd( path * "Projet_RO203/Singles" )
+# include("src/io.jl")
 
 using JuMP
 using Plots
@@ -86,10 +89,10 @@ function displaySolution(x::Array{Int64},y::Array{Int64})
 	
 end
 
-"""println("displaySolution:")
-y = [ 1 1 0 ; 0 1 1 ; 1 1 0 ]
-displaySolution(x,y)"""
 
+function displaySolution(x::Array{Int64},y::Array{VariableRef})
+	displaySolution(x,map(z->round(Int64,JuMP.value(z)),y))
+end
 
 """
 Write a solution in an output stream

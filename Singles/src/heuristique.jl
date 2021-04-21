@@ -1,24 +1,8 @@
 include("generation.jl")
 
-"tries many times heuristicSolve1. if solved, prints the grid, else prints:not solved"
-function heuristicSolve(grille)
-	b=0
-	n=size(grille,1)
-	y=ones(Int,n,n)
-	k=0
-	while b==0 && k<=10*n
-		k=k+1
-		b,y=heuristicSolve1(grille)
-	end
-	if b==0
-		println("not solved")
-	else
-	displaySolution(grille,y)
-	end
-end
-
-"tries to solve ones, and return b=0 if not solved, b=1 is solved"
-
+"""
+tries to solve ones, and return b=0 if not solved, b=1 is solved
+"""
 function heuristicSolve1(grille)
 	n=size(grille,1)
 	y=ones(Int,n,n)
@@ -32,8 +16,6 @@ function heuristicSolve1(grille)
 		if cases_noires!=[]
 			deleteat!(doublons,kx)
 		end
-		
-		
 	end
 	if doublons==[]
 		b=1
@@ -66,6 +48,8 @@ function liste_doublons(grille)
 	
 	return doublons
 end
+
+
 function doublon_ligne(i,grille,val)
 	n = size(grille,1)
 	mem=[]
@@ -80,6 +64,8 @@ function doublon_ligne(i,grille,val)
 		return []
 	end
 end
+
+
 function doublon_colone(j,grille,val)
 	n = size(grille,1)
 	mem=[]
@@ -95,11 +81,14 @@ function doublon_colone(j,grille,val)
 	end
 end
 
+
 function random_choose_in_list(l)
 	n=size(l,1)
 	i=ceil.(Int, n * rand())
 	return l[i],i
 end
+
+
 function supprimer_doublons_i_j(liste,i,j)
 	s=size(liste,1)
 	for k=1:s
@@ -110,6 +99,7 @@ function supprimer_doublons_i_j(liste,i,j)
 	end
 	return liste
 end
+
 
 function liste_cases_admissibles(y,x)
 	n=size(y,1)
@@ -152,5 +142,5 @@ function supprimer_doubons_de_x(grille,y,x)
 	end
 end
 
-grille=generateInstance(5)
-heuristicSolve(grille)
+#grille=generateInstance(5)
+#heuristicSolve(grille)

@@ -1,3 +1,8 @@
+#======= Lancer le programme =======#
+# path = "D:/M1/" A SPECIFIER
+# cd( path * "Projet_RO203/Singles" )
+# include("src/generation.jl")
+
 include("io.jl")
 
 function generateInstance(n::Int64)
@@ -153,7 +158,7 @@ function is_graph_connexe(y)
 	n = size(y,1)
 	i = size(arbre_connexe(y))
 	j = size(liste_sommets_blancs(y))
-	return i==j
+	return i == j
 end
 
 function choix_cases_noires(y)

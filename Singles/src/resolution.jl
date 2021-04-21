@@ -1,7 +1,12 @@
+#======= Lancer le programme =======#
+# path = "D:/M1/" A SPECIFIER
+# cd( path * "Projet_RO203/Singles" )
+# include("src/resolution.jl")
+
 # This file contains methods to solve an instance (heuristically or with CPLEX)
 using CPLEX
 
-include("generation.jl")
+include("heuristique.jl")
 
 TOL = 0.00001
 
@@ -10,69 +15,64 @@ Solve an instance with CPLEX
 """
 function cplexSolve(x)
 	n = size(x,1)
-	y_ = zeros(Int,n,n)
+	isOptimal = false
+	isGrapheConnexe = true
 	it = 0
-	y_mem=[]
 	
-	# Start a chronometer
 	start = time()
-		
-	while !is_graph_connexe(y_) && it < 10
-		println("it=",it)
-		# Create the model
-		m = Model(CPLEX.Optimizer)
-		
-		@variable(m,y[1:n,1:n],Bin)	# ==1 ssi (i,j) blanche
-		
-		#Chiffres différents sur une ligne, zero mis à part
-		@constraint(m, [k in 1:n, i in 1:n], sum(y[i,j] for j in 1:n if x[i,j]==k) <= 1)
-		#Chiffres différents sur une colonne, zero mis à part
-		@constraint(m, [j in 1:n, k in 1:n], sum(y[i,j] for i in 1:n if x[i,j]==k) <= 1)
+	
+	singles = Model(CPLEX.Optimizer)
+	
+	@variable(singles,y[1:n,1:n],Bin)	# == 1 ssi (i,j) blanche
+	@objective(singles,Max,y[1,1])
+	
+	#Chiffres différents sur une ligne, zero mis à part
+	@constraint(singles, lin[k in 1:n, i in 1:n], sum(y[i,j] for j in 1:n if x[i,j] == k) <= 1 )
+	#Chiffres différents sur une colonne, zero mis à part
+	@constraint(singles, col[k in 1:n, j in 1:n], sum(y[i,j] for i in 1:n if x[i,j]==k) <= 1)
 
+	#pas deux cases voisines noires
+	@constraint(singles, black[i in 1:n-1, j in 1:n], y[i,j]+y[i+1,j] >= 1)
+	@constraint(singles, black_[j in 1:n-1, i in 1:n], y[i,j]+y[i,j+1] >= 1)
 
-		#pas deux cases voisines noires
-		@constraint(m,[i in 1:n-1, j in  1:n], y[i,j]+y[i+1,j]>=1)
-		@constraint(m,[j in 1:n-1, i in 1:n], y[i,j]+y[i,j+1]>=1)
-
+	# Solve the model
+	optimize!(singles)
+	println("\nJuMP.primal_status(singles) = ", JuMP.primal_status(singles), "\n")
+	displaySolution(x,y)
+	
+	if !is_graph_connexe(y)
+		y_m = JuMP.value.(y)
 		
-		#contrainte de connexité à réfléchir
-		println("y_mem=", y_mem)
-		for y_m in y_mem
-			@constraint(m, sum( 1  for i in 1:n for j in 1:n if (y[i,j] != y_m[i,j]) ) >= 1)
-		end
+		#contraintes de connexité
+		@constraint(singles, connexite, sum( y[i,j] for i in 1:n for j in 1:n if y_m[i,j] == 0 ) >= 1)
 		
-		@objective(m,Max,y[1,1])
-		
-		
-
-		# Solve the model
-		optimize!(m)
-		
-		y_ = JuMP.value.(y)
-		push!(y_mem,y)
-		println(y_mem)
-		isOptimal = JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT
-		println("isOptimal= ",isOptimal)
-		
-		displaySolution(x,map(x->round(Int64,x),y_) )
-		it += 1
 	end
-    # Return:
-    # 1 - true if an optimum is found
-    # 2 - the resolution time
-	# for i in 1:n
-		# for j in 1:n
-			# print(JuMP.value(y[i,j]))
-			# print("  ")
-		# end
-		# println("")
-	# end
-    return y_, isOptimal, time() - start
-    
-    
+
+	optimize!(singles)
+	println("\n",singles)
+	println("JuMP.primal_status(singles) = ", JuMP.primal_status(singles) )
+
+    return y, JuMP.primal_status(singles) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
 end
 
-
+"""
+tries many times heuristicSolve1. if solved, prints the grid, else prints:not solved
+"""
+function heuristicSolve(grille)
+	b=0
+	n=size(grille,1)
+	y=ones(Int,n,n)
+	k=0
+	while b==0 && k<=10*n
+		k=k+1
+		b,y=heuristicSolve1(grille)
+	end
+	if b==0
+		println("not solved")
+	else
+	displaySolution(grille,y)
+	end
+end
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
@@ -180,6 +180,9 @@ function solveDataSet()
 end
 
 x = readInputFile("./data/instance_t3.txt")
+displayGrid(x)
 y, isOptimal, resolutionTime = cplexSolve(x)
-#displaySolution(x,map(x->round(Int64,x),y) )
+if isOptimal
+	displaySolution(x,y)
+end
 #solveDataSet()
