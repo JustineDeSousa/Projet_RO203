@@ -62,16 +62,11 @@ function heuristicSolve(grille)
 	b=0
 	n=size(grille,1)
 	y=ones(Int,n,n)
-	k=0
-	while b==0 && k<=10*n
-		k=k+1
+	while b==0 
 		b,y=heuristicSolve1(grille)
 	end
-	if b==0
-		println("not solved")
-	else
 	displaySolution(grille,y)
-	end
+	
 end
 
 """
