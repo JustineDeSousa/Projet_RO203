@@ -61,7 +61,7 @@ function displayGrid(x::Array{Int64})
 		println("|")
 	end
 	
-    println(" ","-"^(2*n+1))
+    println(" ","-"^(2*n+1),"\n")
 	
 end
 
@@ -85,7 +85,7 @@ function displaySolution(x::Array{Int64},y::Array{Int64})
 		println("|")
 	end
 	
-    println(" ","-"^(2*n+1))
+    println(" ","-"^(2*n+1),"\n")
 	
 end
 

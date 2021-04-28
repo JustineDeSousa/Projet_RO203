@@ -394,8 +394,6 @@ function solveDataSet()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
-                        print(".")
-
                         solution, isOptimal  = heuristicSolve(nord,sud,ouest,est)
 
                         # Stop the chronometer

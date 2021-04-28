@@ -212,7 +212,6 @@ generateInstance(3)
 
 """
 Generate all the instances
-
 Remark: a grid is generated only if the corresponding output file does not already exist
 """
 function generateDataSet()
