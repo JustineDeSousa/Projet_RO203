@@ -9,7 +9,7 @@ function heuristicSolve1(grille)
 	kv=0
 	cases_noires=[]
 	doublons=liste_doublons(grille)
-	while (doublons!=[])&&(kv<=3*n)
+	while (doublons!=[])&&(kv<=3*n*n)
 		kv+=1
 		x,kx=random_choose_in_list(doublons)
 		cases_noires=supprimer_doubons_de_x(grille,y,x)
@@ -119,7 +119,7 @@ function supprimer_doubons_de_x(grille,y,x)
 	cases_noires=[]
 	n=size(y,1)
 	cont=0
-	while ((size(x,1)>1)&&(cont<=3*n))
+	while ((size(x,1)>1)&&(cont<=3*n*n))
 		cont=cont+1
 		cases_admissibles=liste_cases_admissibles(y,x)
 		if cases_admissibles!=[]

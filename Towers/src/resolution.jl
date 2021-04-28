@@ -1,5 +1,5 @@
 #Pour executer le code:
-#include("./src/generation.jl")
+#include("./src/resolution.jl")
 # This file contains methods to solve an instance (heuristically or with CPLEX)
 using CPLEX
 
@@ -361,21 +361,26 @@ function solveDataSet()
         
         println("-- Resolution of ", file)
         nord,sud,ouest,est = readInputFile(dataFolder * file)
+		println("dataFolder * file = ",abspath(dataFolder*file))
         
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
+			println("methodId = ", methodId)
             
             outputFile = resolutionFolder[methodId] * "/" * file
-			
+			println("outputFile = ", abspath(outputFile))
             # If the instance has not already been solved by this method
             if !isfile(outputFile)
+				println("isfile(outputFile)")
                 fout = open(outputFile, "w")  
+				
 				
                 resolutionTime = -1
                 isOptimal = false
                 
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
+					println("resolutionMethod[methodId] == cplex")
                     # Solve it and get the results
                     x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
                     
@@ -386,6 +391,7 @@ function solveDataSet()
 
                 # If the method is one of the heuristics
                 else
+					println("resolutionMethod[methodId] == heuristique")
                     isSolved = false
                     solution = []
 
@@ -394,16 +400,17 @@ function solveDataSet()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
+						println("start heuristic")
                         solution, isOptimal  = heuristicSolve(nord,sud,ouest,est)
 
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
                         
                     end
-
+					println("fin heuristique")
                     # Write the solution (if any)
                     if isOptimal
-                        writeSolution(fout,x)
+                        writeSolution(fout,solution)
 						println(fout)
                     end 
                 end
@@ -415,7 +422,7 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
-            include(outputFile)
+            #include(outputFile) #pose soucis
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         

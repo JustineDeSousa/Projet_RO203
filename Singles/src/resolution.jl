@@ -18,6 +18,7 @@ function cplexSolve(x)
 	isOptimal = false
 	isGrapheConnexe = true
 	it = 0
+	maxIt = 10*n
 	
 	start = time()
 	
@@ -37,20 +38,20 @@ function cplexSolve(x)
 
 	# Solve the model
 	optimize!(singles)
-	println("\nJuMP.primal_status(singles) = ", JuMP.primal_status(singles), "\n")
-	displaySolution(x,y)
 	
-	if !is_graph_connexe(y)
-		y_m = JuMP.value.(y)
+	y_m = JuMP.value.(y)
+	
+	while !is_graph_connexe(y_m) && it < maxIt
 		
 		#contraintes de connexité
-		@constraint(singles, connexite, sum( y[i,j] for i in 1:n for j in 1:n if y_m[i,j] == 0 ) >= 1)
+		@constraint(singles, sum( y[i,j] for i in 1:n for j in 1:n if y_m[i,j] == 0 ) >= 1)
+		#@constraint(singles, sum( y[i,j] for i in 1:n for j in 1:n if y_m[i,j] == 1 ) <= n*n-1)
 		
+		optimize!(singles)
+		y_m = JuMP.value.(y)
+		it += 1
+		println("\n----------- itération ", it, " ----------\n")
 	end
-
-	optimize!(singles)
-	println("\n",singles)
-	println("JuMP.primal_status(singles) = ", JuMP.primal_status(singles) )
 
     return y, JuMP.primal_status(singles) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
 end
@@ -59,14 +60,20 @@ end
 tries many times heuristicSolve1. if solved, prints the grid, else prints:not solved
 """
 function heuristicSolve(grille)
-	b=0
-	n=size(grille,1)
-	y=ones(Int,n,n)
-	while b==0 
-		b,y=heuristicSolve1(grille)
+
+	println("in function heuristicSolve")
+	b = 0
+	n = size(grille,1)
+	y = ones(Int,n,n)
+	k = 0
+	while b == 0 && k <= 10*n*n
+		k = k+1
+		b, y = heuristicSolve1(grille)
 	end
-	displaySolution(grille,y)
-	
+	if b == 0
+		y = zeros(Int,n,n)
+	end
+	return y, k <= 10*n
 end
 
 """
@@ -82,8 +89,8 @@ function solveDataSet()
     resFolder = "res/"
 
     # Array which contains the name of the resolution methods
-    resolutionMethod = ["cplex"]
-    #resolutionMethod = ["cplex", "heuristique"]
+    # resolutionMethod = ["cplex"]
+    resolutionMethod = ["cplex", "heuristique"]
 
     # Array which contains the result folder of each resolution method
     resolutionFolder = resFolder .* resolutionMethod
@@ -120,6 +127,7 @@ function solveDataSet()
                 
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
+					println("\n---------- CPLEX ----------\n")
                     
                     # Solve it and get the results
                     y, isOptimal, resolutionTime = cplexSolve(x)
@@ -131,7 +139,7 @@ function solveDataSet()
 
                 # If the method is one of the heuristics
                 else
-                    
+                    println("\n---------- heuristic ----------\n")
                     isSolved = false
 
                     # Start a chronometer 
@@ -139,12 +147,8 @@ function solveDataSet()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
-                        
-                        # TODO 
-                        println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
-                        
                         # Solve it and get the results
-                        isOptimal, resolutionTime = heuristicSolve()
+                        y, isOptimal = heuristicSolve(x)
 
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
@@ -153,10 +157,8 @@ function solveDataSet()
 
                     # Write the solution (if any)
                     if isOptimal
-
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
-                        
+						writeSolution(fout,x)
+						println(fout)
                     end 
                 end
 
@@ -174,10 +176,14 @@ function solveDataSet()
     end 
 end
 
-x = readInputFile("./data/instance_t3.txt")
+x = generateInstance(9)
+# saveInstance(x,"instance_t10.txt")
+# x = readInputFile("data/instance_t10.txt")
+println("\n== La grille ==\n")
 displayGrid(x)
-y, isOptimal, resolutionTime = cplexSolve(x)
-if isOptimal
-	displaySolution(x,y)
-end
+y, isOptimal = heuristicSolve(x)
+println("\n== Solution heuristique ==\n")
+# y, isOptimal, resolutionTime = cplexSolve(x)
+# println("\n== Solution cplex ==\n")
+displaySolution(x,y)
 #solveDataSet()
