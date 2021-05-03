@@ -181,11 +181,11 @@ function saveInstance(x, outputFile::String)
     close(writer)    
 end
 
-"""saveInstance(x,"intance_X.txt")"""
+
 
 function performanceDiagram(outputFile::String)
 
-    resultFolder = "../res/"
+    resultFolder = "./res/"
     
     # Maximal number of files in a subfolder
     maxSize = 0
@@ -228,7 +228,6 @@ function performanceDiagram(outputFile::String)
 
     # For each subfolder
     for file in readdir(resultFolder)
-            
         path = resultFolder * file
         
         if isdir(path)
@@ -240,7 +239,7 @@ function performanceDiagram(outputFile::String)
             for resultFile in filter(x->occursin(".txt", x), readdir(path))
 
                 fileCount += 1
-                include(path * "/" * resultFile)
+                include("../" * path * "/" * resultFile)
 
                 if isOptimal
                     results[folderCount, fileCount] = solveTime
@@ -276,12 +275,11 @@ function performanceDiagram(outputFile::String)
 
         # While the end of the line is not reached 
         while currentId != size(results, 2) && results[dim, currentId] != Inf
-
             # Number of elements which have the value previousX
             identicalValues = 1
 
-             # While the value is the same
-            while results[dim, currentId] == previousX && currentId <= size(results, 2)
+            # While the value is the same
+            while currentId < size(results, 2) && results[dim, currentId] == previousX
                 currentId += 1
                 identicalValues += 1
             end
@@ -297,7 +295,6 @@ function performanceDiagram(outputFile::String)
             
             previousX = results[dim, currentId]
             previousY = currentId - 1
-            
         end
 
         append!(x, maxSolveTime)
@@ -307,12 +304,13 @@ function performanceDiagram(outputFile::String)
         if dim == 1
 
             # Draw a new plot
-            plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
+            #plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
+			plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
 
         # Otherwise 
         else
             # Add the new curve to the created plot
-            savefig(plot!(x, y, label = folderName[dim], linewidth=3), outputFile)
+            savefig(plot!(x,y, label = folderName[dim], linewidth=3), outputFile)
         end 
     end
 end 
@@ -482,3 +480,4 @@ function resultsArray(outputFile::String)
     close(fout)
     
 end 
+

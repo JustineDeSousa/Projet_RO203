@@ -17,6 +17,8 @@ function heuristicSolve1(grille)
 			deleteat!(doublons,kx)
 		end
 	end
+	# println("doublons",doublons)
+	#displaySolution(grille,y)
 	if doublons==[]
 		b=1
 		return b,y
@@ -142,5 +144,3 @@ function supprimer_doubons_de_x(grille,y,x)
 	end
 end
 
-#grille=generateInstance(5)
-#heuristicSolve(grille)

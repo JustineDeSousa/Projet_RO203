@@ -208,7 +208,7 @@ end
 
 
 
-generateInstance(3)
+#generateInstance(3)
 
 """
 Generate all the instances
@@ -217,10 +217,9 @@ Remark: a grid is generated only if the corresponding output file does not alrea
 function generateDataSet()
 
     # For each grid size considered
-    for size in [5,6,8,10,12]
-
+    for size in [10,20,30,40]
 		# Generate 10 instances
-		for instance in 1:10
+		for instance in 1:1
 
 			fileName = "../data/instance_t" * string(size) * "_" * string(instance) * ".txt"
 
@@ -232,4 +231,4 @@ function generateDataSet()
 	end
 end
 
-#generateDataSet()
+generateDataSet()

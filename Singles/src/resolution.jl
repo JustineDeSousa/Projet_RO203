@@ -59,14 +59,18 @@ end
 tries many times heuristicSolve1. if solved, prints the grid, else prints:not solved
 """
 function heuristicSolve(grille)
-	b=0
+	b=0 
+	k=0
 	n=size(grille,1)
 	y=ones(Int,n,n)
-	while b==0 
+	while b==0 && k<100000
+		k+=1
 		b,y=heuristicSolve1(grille)
+		
+		
 	end
-	displaySolution(grille,y)
-	
+	#displaySolution(grille,y)
+	return b==1,5
 end
 
 """
@@ -141,10 +145,10 @@ function solveDataSet()
                     while !isOptimal && resolutionTime < 100
                         
                         # TODO 
-                        println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
+                        #println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
                         
                         # Solve it and get the results
-                        isOptimal, resolutionTime = heuristicSolve()
+                        isOptimal, resolutionTime = heuristicSolve(x)
 
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
@@ -167,17 +171,42 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
-            #include(outputFile)
+            include("../"*outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         
     end 
 end
 
-x = readInputFile("./data/instance_t3.txt")
-displayGrid(x)
-y, isOptimal, resolutionTime = cplexSolve(x)
-if isOptimal
-	displaySolution(x,y)
-end
+# x = readInputFile("./data/instance_t3.txt")
+# displayGrid(x)
+# y, isOptimal, resolutionTime = cplexSolve(x)
+# if isOptimal
+	# displaySolution(x,y)
+# end
 #solveDataSet()
+
+function test(s,m)
+
+for i in 1:100
+	grille=generateInstance(7)
+	displayGrid(grille)
+	k=heuristicSolve(grille)
+	if k>=999
+		m+=1
+	end
+	s=s+k
+end
+
+println("m:",m)
+println("s:",s/100)
+end
+#test(0,0)
+#grille=[[7,4,7,1,5,3,6] [3,1,6,7,5,3,2] [5,6,2,5,2,1,3] [7,3,1,5,6,5,4] [4,5,7,6,2,2,4] [2,5,6,4,7,6,1] [5,6,2,3,6,4,1]]
+#grille=[[5,6,7] [1,2,3] [2,2,4]]
+# grille=generateInstance(3)
+# displayGrid(grille)
+# heuristicSolve(grille)
+
+solveDataSet()
+performanceDiagram("C:/Users/Yoga/Documents/2A/info/towers/Projet_RO203/Singles/diagramme.png")
