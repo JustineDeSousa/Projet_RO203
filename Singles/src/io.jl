@@ -329,8 +329,8 @@ Prerequisites:
 """
 function resultsArray(outputFile::String)
     
-    resultFolder = "../res/"
-    dataFolder = "../data/"
+    resultFolder = "res/"
+    dataFolder = "data/"
     
     # Maximal number of files in a subfolder
     maxSize = 0
@@ -453,7 +453,7 @@ function resultsArray(outputFile::String)
             # If the instance has been solved by this method
             if isfile(path)
 
-                include(path)
+                include("../"*path)
 
                 println(fout, " & ", round(solveTime, digits=2), " & ")
 

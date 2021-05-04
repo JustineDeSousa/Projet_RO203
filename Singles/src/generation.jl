@@ -192,7 +192,7 @@ function choix_cases_noires(y)
 	return cases_noires
 end
 
-"y=[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]"
+
 function supprimer_doublons(e,liste)
 	s=size(liste,1)
 	for i=1:s
@@ -205,11 +205,6 @@ function supprimer_doublons(e,liste)
 end
 
 
-
-
-
-#generateInstance(3)
-
 """
 Generate all the instances
 Remark: a grid is generated only if the corresponding output file does not already exist
@@ -217,9 +212,9 @@ Remark: a grid is generated only if the corresponding output file does not alrea
 function generateDataSet()
 
     # For each grid size considered
-    for size in [10,20,30,40]
+    for size in [5,6,7]
 		# Generate 10 instances
-		for instance in 1:1
+		for instance in 1:10
 
 			fileName = "../data/instance_t" * string(size) * "_" * string(instance) * ".txt"
 
@@ -231,4 +226,4 @@ function generateDataSet()
 	end
 end
 
-generateDataSet()
+#generateDataSet()
