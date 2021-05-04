@@ -358,6 +358,7 @@ function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ou
 				nordVisibles += 1
 				nordTowerMax = t[i,c]
 			end
+
 		end
 		if sudTowerMax < 5 && (t[n-i+1,c] == 0 || t[n-i+1,c] > sudTowerMax)
 			sudMaxVisibles += 1
@@ -366,6 +367,7 @@ function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ou
 				sudTowerMax = t[n-i+1,c]
 			end
 		end
+
 		if ouestTowerMax < 5 && (t[l,i] == 0 || t[l,i] > ouestTowerMax)
 			ouestMaxVisibles += 1
 			if t[l,i] > ouestTowerMax
