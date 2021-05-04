@@ -38,6 +38,9 @@ function cplexSolve(x)
 
 	# Solve the model
 	optimize!(singles)
+
+	println("\nJuMP.primal_status(singles) = ", JuMP.primal_status(singles), "\n")
+
 	
 	y_m = JuMP.value.(y)
 	
@@ -61,12 +64,13 @@ tries many times heuristicSolve1. if solved, prints the grid, else prints:not so
 """
 function heuristicSolve(grille)
 
+
 	println("in function heuristicSolve")
 	b = 0
 	n = size(grille,1)
 	y = ones(Int,n,n)
 	k = 0
-	while b == 0 && k <= 10*n*n
+	while b == 0 && k <= 1000*n*n
 		k = k+1
 		b, y = heuristicSolve1(grille)
 	end
@@ -74,6 +78,7 @@ function heuristicSolve(grille)
 		y = zeros(Int,n,n)
 	end
 	return y, k <= 10*n
+
 end
 
 """
@@ -89,7 +94,9 @@ function solveDataSet()
     resFolder = "res/"
 
     # Array which contains the name of the resolution methods
-    # resolutionMethod = ["cplex"]
+
+    #resolutionMethod = ["cplex"]
+
     resolutionMethod = ["cplex", "heuristique"]
 
     # Array which contains the result folder of each resolution method
@@ -147,8 +154,11 @@ function solveDataSet()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
+
+                       
                         # Solve it and get the results
-                        y, isOptimal = heuristicSolve(x)
+                        isOptimal, resolutionTime = heuristicSolve(x)
+
 
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
@@ -157,8 +167,10 @@ function solveDataSet()
 
                     # Write the solution (if any)
                     if isOptimal
+
 						writeSolution(fout,x)
 						println(fout)
+
                     end 
                 end
 
@@ -169,21 +181,14 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
-            #include(outputFile)
+            include("../"*outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         
     end 
 end
 
-x = generateInstance(9)
-# saveInstance(x,"instance_t10.txt")
-# x = readInputFile("data/instance_t10.txt")
-println("\n== La grille ==\n")
-displayGrid(x)
-y, isOptimal = heuristicSolve(x)
-println("\n== Solution heuristique ==\n")
-# y, isOptimal, resolutionTime = cplexSolve(x)
-# println("\n== Solution cplex ==\n")
-displaySolution(x,y)
-#solveDataSet()
+
+# solveDataSet()
+# performanceDiagram("C:/Users/Yoga/Documents/2A/info/towers/Projet_RO203/Singles/diagramme.png")
+# resultsArray("C:/Users/Yoga/Documents/2A/info/towers/Projet_RO203/Singles/results.tex")

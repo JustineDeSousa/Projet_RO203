@@ -339,8 +339,8 @@ function solveDataSet()
     resFolder = "res/"
 
     # Array which contains the name of the resolution methods
-    #resolutionMethod = ["cplex"]
-    resolutionMethod = ["cplex", "heuristique"]
+    resolutionMethod = ["cplex"]
+    #resolutionMethod = ["cplex", "heuristique"]
 
     # Array which contains the result folder of each resolution method
     resolutionFolder = resFolder .* resolutionMethod
@@ -422,23 +422,13 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
+
             #include(outputFile) #pose soucis
+
+            include("../"*outputFile)
+
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         
     end 
 end
-
-solveDataSet()
-performanceDiagram("D:/M1/RO203/Projet_RO203/Towers/diagramme.jpg")
-
-#filename = "./data/instance_t4_2.txt"
-#nord,sud,ouest,est = readInputFile(filename)
-# nord,sud,ouest,est = generateInstance(9)
-# displayGrid(nord,sud,ouest,est)
-# x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
-# println("====== Solution avec CPLEX ======")
-# displaySolution(x,nord,sud,ouest,est)
-# t, isOptimal = heuristicSolve(nord,sud,ouest,est)
-# println("== Solution avec l'heuristique ==")
-# displaySolution(x,nord,sud,ouest,est)
