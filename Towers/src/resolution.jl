@@ -1,5 +1,6 @@
 #Pour executer le code:
-#include("./src/resolution.jl")
+# cd("D:/M1/RO203/Projet_RO203/Towers") Chemin à modifier
+# include("src/resolution.jl")
 # This file contains methods to solve an instance (heuristically or with CPLEX)
 using CPLEX
 
@@ -74,66 +75,114 @@ Heuristically solve an instance
 function heuristicSolve(nord,sud,ouest,est)
 	n = size(nord,1)
 	t = Array{Int64,2}(zeros(n,n))
-	initialize(t,nord,sud,ouest,est)
-
+	maxit = 1e6
+	
+	filledCases = initialize(t,nord,sud,ouest,est)
+	
+	coupsJoues = []
     gridFilled = false
     gridStillFeasible = true
-	checkFeasibility = true
+
+	# Values which can be assigned to each cell
+	values = Matrix{Union{Nothing,Array{Int64}}}(nothing,n,n)
 	
-	#Tant que la grille n'est pas remplie et qu'elle est toujours valide
-    while !gridFilled && gridStillFeasible
-        mcCell = [-1 -1]	# Coordinates of the most constrained cell
-        values = nothing	# Values which can be assigned to the mcCell
-		
-        l = ceil.(Int, n * rand())
-        c = ceil.(Int, n * rand())
-        
-		id = 1
-        # For each cell of the grid, while a cell with 0 values has not been found
-        while id <= n*n && (values == nothing || size(values, 1)  != 0)
-			#Si on n'a pas déjà visité cette case
-			if t[l, c] == 0
-                cValues = possibleValues(t, l, c, nord, sud, ouest, est)
-                #Si c'est la 1ère case ou si on a trouvé une most constrained cell
-                if values == nothing || size(cValues, 1) < size(values, 1)
-                    values = cValues
-					mcCell = [l c]
-                end 
-            end
-			l,c = nextCell(l,c,n)
-            id += 1
-		end
-		
-		# If all the cells have a value
-        if values == nothing
-            gridFilled = true
-            gridStillFeasible = true
-        else
-            # If a cell cannot be assigned any value
-            if size(values, 1) == 0
-                gridStillFeasible = false
-            else# Else assign a random value to the most constrained cell
-				newValue = ceil.(Int, rand() * size(values, 1))
-                if checkFeasibility
-                    gridStillFeasible = false
-                    id = 1
-                    while !gridStillFeasible && id <= size(values, 1)
-                        t[mcCell[1], mcCell[2]] = values[rem(newValue, size(values, 1)) + 1]
-                        if isGridFeasible(t, nord, sud, ouest, est)
-                            gridStillFeasible = true
-                        else
-                            newValue += 1
-                        end
-                        id += 1
-                        
-                    end
-                else
-                    t[mcCell[1], mcCell[2]] = values[newValue]
-                end
-            end 
-        end
+	l = ceil.(Int, n * rand())
+	c = ceil.(Int, n * rand())
+	
+	## ========= On prend la première cellule nulle trouvée ========== ##
+	id = 1
+	while t[l,c] != 0 && id < n*n
+		l,c = nextCell(l,c,n)
+		id += 1
 	end
-    return t, gridStillFeasible
+	mcCell = [l, c]	# Coordinates of the most constrained cell
+	mcValues = possibleValues(t,l,c,nord,sud,ouest,est)	
+	## ===== On répertorie les valeurs possibles pour chaque case ===== ##
+	id = 1
+	while id <= n*n && size(mcValues, 1)  != 0
+		if t[l, c] == 0
+			values[l,c] = possibleValues(t, l, c, nord, sud, ouest, est)
+			if size(values[l,c], 1) < size(mcValues, 1)
+				mcValues = values[l,c]
+				mcCell = [l, c]
+			end
+		end
+		l,c = nextCell(l,c,n)
+		id += 1
+	end
+	## =================================================================== ##
+	
+	it = 0
+	## Tant que la grille n'est pas remplie et qu'elle est toujours valide ##
+    while gridStillFeasible && filledCases < n*n && it < maxit
+		
+		## ======== On vérifie que la grille est toujours faisable ======== ##
+		if size(mcValues,1) == 0 && t[mcCell[1],mcCell[2]] == 0
+			gridStillFeasible = false
+		## ================================================================ ##
+		else ## ================= La grille est faisable ================= ##
+			newValue = ceil.(Int, rand() * size(mcValues, 1))
+			newTest = mcValues[rem(newValue, size(mcValues, 1)) + 1]
+			gridStillFeasible = false
+			## ======= On teste les valeurs possibles de la mcCell ======= ##
+			id = 1
+			while !gridStillFeasible && id <= size(mcValues, 1)
+				t[mcCell[1], mcCell[2]] = newTest
+				if isGridFeasible(t, nord, sud, ouest, est)
+					push!(coupsJoues,(mcCell,newTest))
+					filledCases += 1
+					gridStillFeasible = true
+				else
+					t[mcCell[1], mcCell[2]] = 0
+					newValue += 1
+					newTest = mcValues[rem(newValue, size(mcValues, 1)) + 1]
+					filter!(x->x!=t[mcCell[1], mcCell[2]],values[mcCell[1], mcCell[2]])
+				end
+				id += 1
+			end
+			## ========================================================== ##
+			if !gridStillFeasible && id > size(mcValues,1) ## == On n'a trouvé aucune valeur ok == ##
+				## ========== On veut annuler le dernier choix ========== ##
+				if size(coupsJoues,1) > 0
+					cell,v = coupsJoues[end]
+					t[cell[1],cell[2]] = 0
+					filledCases -= 1
+					filter!(x->x!=v,values[cell[1],cell[2]])
+					gridStillFeasible = true
+				else
+					gridStillFeasible = false
+				end
+			end
+			## ========= On prend la première cellule nulle trouvée ========== ##
+			id = 1
+			while !(filledCases == n*n) && t[l,c] != 0 && id < n*n
+				l,c = nextCell(l,c,n)
+				id += 1
+			end
+			mcCell = [l, c]	# Coordinates of the most constrained cell
+			mcValues = possibleValues(t,l,c,nord,sud,ouest,est)	
+			## =================== On recherche la mcCell ================ ##
+			id = 1
+			while !(filledCases == n*n) && id <= n*n && size(mcValues, 1)  != 0
+				if t[l, c] == 0
+					if values[l,c] == nothing
+					elseif size(values[l,c], 1) < size(mcValues, 1)
+						mcValues = values[l,c]
+						mcCell = [l, c]
+					end
+				end
+				l,c = nextCell(l,c,n)
+				id += 1
+			end
+			## =========================================================== ##
+		end
+		it += 1
+	end
+	if it == maxit
+		return t, false
+	else
+		return t, gridStillFeasible
+	end
 end
 
 """
@@ -142,48 +191,62 @@ put the easy values in t
 function initialize(t,nord,sud,ouest,est)
 	#println("----- Initialization -----")
 	n = size(t,1)
+	filledCases = []
 	for i in 1:n
 		if ouest[i] == n
 			for j in 1:n
 				t[i,j] = j
+				push!(filledCases,[i,j])
 			end
 		elseif ouest[i] == 1
 			t[i,1] = n
+			push!(filledCases,[i,1])
 			if est[i] == 2
 				t[i,n] = n-1
+				push!(filledCases,[i,n])
 			end
 		end
 		if est[i] == n
 			for j in 1:n
 				t[i,j] = n-j+1
+				push!(filledCases,[i,j])
 			end
 		elseif est[i] == 1
 			t[i,n] = n
+			push!(filledCases,[i,n])
 			if ouest[i] == 2
 				t[i,1] = n-1
+				push!(filledCases,[i,1])
 			end
 		end
 		if nord[i] == n
 			for j in 1:n
 				t[j,i] = j
+				push!(filledCases,[j,i])
 			end
 		elseif nord[i] == 1
 			t[1,i] = n
+			push!(filledCases,[1,i])
 			if sud[i] == 2
 				t[n,i] = n-1
+				push!(filledCases,[n,i])
 			end
 		end
 		if sud[i] == n
 			for j in 1:n
 				t[j,i] = n-j+1
+				push!(filledCases,[j,i])
 			end
 		elseif sud[i] == 1
 			t[n,i] = n
+			push!(filledCases,[n,i])
 			if nord[i] == 2
 				t[1,i] = n-1
+				push!(filledCases,[1,i])
 			end
 		end
 	end
+	return size(unique(filledCases),1)
 end
 
 function nextCell(l,c,n)         
@@ -201,19 +264,7 @@ function nextCell(l,c,n)
 	return l,c
 end
 
-function possibleValues(t::Array{Int, 2}, l::Int64, c::Int64, nord, sud, ouest, est)
-	values = nothing
-    for v in 1:size(t, 1)
-        if isValid(t, l, c, v, nord, sud, ouest, est)
-			if values == nothing
-				values = [v]
-			else
-				values = append!(values, v)
-			end
-		end
-    end 
-    return values
-end
+
 
 """
 Test if cell (l, c) can be assigned value v
@@ -227,21 +278,24 @@ Return: true if t[l, c] can be set to v; false otherwise
 """
 function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ouest, est)
 	n = size(t, 1)
+	if t[l,c] > 0
+		return false
+	end
     isValid = true
-	
     # Test if v appears in column c
     i = 1
     while isValid && i <= n
-        if t[i, c] == v
+        if i != l && t[i, c] == v
+			# println("t[",i,",",c,"] = ",v,"\tligne")
             isValid = false
         end
         i += 1
     end
-
     # Test if v appears in line l
     j = 1
     while isValid && j <= n
-        if t[l, j] == v
+        if j!=c && t[l, j] == v
+		# println("t[",l,",",j,"] = ",v)
             isValid = false
         end
         j += 1
@@ -250,63 +304,125 @@ function isValid(t::Array{Int64, 2}, l::Int64, c::Int64, v::Int64, nord, sud, ou
     # Test if the add of v still fits the constraints
 	t[l,c] = v
 	
-	nordSum = 0
-	towerMax = 0
-	for i in 1:n
-		if t[i,c] > towerMax
-			nordSum += 1
-			towerMax = t[i,c]
+	nordVisibles = 0
+	sudVisibles = 0
+	ouestVisibles = 0
+	estVisibles = 0
+	
+	nordMaxVisibles = 0
+	sudMaxVisibles = 0
+	ouestMaxVisibles = 0
+	estMaxVisibles = 0
+	
+	nordTowerMax = 0
+	sudTowerMax = 0
+	ouestTowerMax = 0
+	estTowerMax = 0
+	
+	if isValid
+		if t[1,c] >= 0
+			nordMaxVisibles += 1
+			nordTowerMax = t[1,c]
+			if t[1,c] > 0
+				nordVisibles += 1
+			end
+		end
+		if t[n,c] >= 0
+			sudMaxVisibles += 1
+			sudTowerMax = t[n,c]
+			if t[n,c] > 0
+				sudVisibles += 1
+			end
+		end
+		if t[l,1] >= 0
+			ouestMaxVisibles += 1
+			ouestTowerMax = t[l,1]
+			if t[l,1] > 0
+				ouestVisibles += 1
+			end
+		end
+		if t[l,n] >= 0
+			estMaxVisibles += 1
+			estTowerMax = t[l,n]
+			if t[l,n] >0
+				estVisibles += 1
+			end
 		end
 	end
-
-	sudSum = 0
-	towerMax = 0
-	for i in n:-1:1
-		if t[i,c] > towerMax
-			sudSum += 1
-			towerMax = t[i,c]
+	
+	i = 2
+	while isValid && i<=n
+		if nordTowerMax < 5 && (t[i,c] == 0 || t[i,c] > nordTowerMax)
+			nordMaxVisibles += 1
+			if t[i,c] > nordTowerMax
+				nordVisibles += 1
+				nordTowerMax = t[i,c]
+			end
 		end
+		if sudTowerMax < 5 && (t[n-i+1,c] == 0 || t[n-i+1,c] > sudTowerMax)
+			sudMaxVisibles += 1
+			if t[n-i+1,c] > sudTowerMax
+				sudVisibles += 1
+				sudTowerMax = t[n-i+1,c]
+			end
+		end
+		if ouestTowerMax < 5 && (t[l,i] == 0 || t[l,i] > ouestTowerMax)
+			ouestMaxVisibles += 1
+			if t[l,i] > ouestTowerMax
+				ouestVisibles += 1
+				ouestTowerMax = t[l,i]
+			end
+		end
+		if estTowerMax < 5 && (t[l,n-i+1] == 0	|| t[l,n-i+1] > estTowerMax)
+			estMaxVisibles +=1
+			if t[l,n-i+1] > estTowerMax
+				estVisibles += 1
+				estTowerMax = t[l,n-i+1]
+			end
+		end
+		i += 1
 	end
 
-	ouestSum = 0
-	towerMax = 0
-	for i in 1:n
-		if t[l,i] > towerMax
-			ouestSum += 1
-			towerMax = t[l,i]
-		end
-	end
-
-	estSum = 0
-	towerMax = 0
-	for i in n:-1:1
-		if t[l,i] > towerMax
-			estSum += 1
-			towerMax = t[l,i]
-		end
-	end
-
-	if nordSum > nord[c] || sudSum > sud[c] || ouestSum > ouest[l] || estSum > est[l]
+	if isValid && (nordVisibles>nord[c] || sudVisibles>sud[c] || ouestVisibles>ouest[l] || estVisibles>est[l])
+		# println("here")
+		isValid = false
+	elseif isValid && (nordMaxVisibles<nord[c] || sudMaxVisibles<sud[c] || ouestMaxVisibles<ouest[l] || estMaxVisibles<est[l])
+		# println("there")
 		isValid = false
 	end
-	if !isValid
-		t[l,c] = 0
-	end
+	t[l,c] = 0
     return isValid 
 end
 
+
+function possibleValues(t::Array{Int, 2}, l::Int64, c::Int64, nord, sud, ouest, est)
+	values = []
+    for v in 1:size(t, 1)
+	# println("v=",v)
+        if isValid(t, l, c, v, nord, sud, ouest, est)
+			# println("isValid(t,", l,",", c,",", v,")")
+			values = append!(values, v)
+		else
+			# println("! isValid(t,", l,",", c,",", v,")")
+		end
+    end
+    return values
+end
+
+
 function isGridFeasible(t::Array{Int64, 2}, nord, sud, ouest, est)
     n = size(t, 1)
+	copyT = copy(t)
     isFeasible = true
     l = 1
     c = 1
     while isFeasible && l <= n
-        if t[l, c] == 0
+        if copyT[l, c] == 0
             feasibleValueFound = false
             v = 1
             while !feasibleValueFound && v <= n
-                if isValid(t, l, c, v, nord, sud, ouest, est)
-                    feasibleValueFound = true
+                if isValid(copyT, l, c, v, nord, sud, ouest, est)
+					feasibleValueFound = true
                 end
                 v += 1
             end
@@ -353,27 +469,20 @@ function solveDataSet()
     end
             
     global isOptimal = false
-    global solveTime = -1
+    global resolutionTime = -1
 
     # For each instance
     # (for each file in folder dataFolder which ends by ".txt")
-    for file in filter(x->occursin(".txt", x), readdir(dataFolder))  
-        
+    for file in filter(x->occursin(".txt", x), readdir(dataFolder))
         println("-- Resolution of ", file)
         nord,sud,ouest,est = readInputFile(dataFolder * file)
-		println("dataFolder * file = ",abspath(dataFolder*file))
         
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
-			println("methodId = ", methodId)
-            
             outputFile = resolutionFolder[methodId] * "/" * file
-			println("outputFile = ", abspath(outputFile))
             # If the instance has not already been solved by this method
             if !isfile(outputFile)
-				println("isfile(outputFile)")
                 fout = open(outputFile, "w")  
-				
 				
                 resolutionTime = -1
                 isOptimal = false
@@ -383,7 +492,6 @@ function solveDataSet()
 					println("resolutionMethod[methodId] == cplex")
                     # Solve it and get the results
                     x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
-                    
                     # If a solution is found, write it
                     if isOptimal
 						writeSolution(fout,x)
@@ -399,18 +507,14 @@ function solveDataSet()
                     startingTime = time()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
-                    while !isOptimal && resolutionTime < 100
-						println("start heuristic")
-                        solution, isOptimal  = heuristicSolve(nord,sud,ouest,est)
-
+                    while !isOptimal && resolutionTime < 10
+                        x, isOptimal  = heuristicSolve(nord,sud,ouest,est)
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
-                        
                     end
-					println("fin heuristique")
                     # Write the solution (if any)
                     if isOptimal
-                        writeSolution(fout,solution)
+                        writeSolution(fout,x)
 						println(fout)
                     end 
                 end
@@ -422,13 +526,47 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
+<<<<<<< Updated upstream
 
             #include(outputFile) #pose soucis
 
             include("../"*outputFile)
 
+=======
+            include("../"*outputFile) #pose soucis
+>>>>>>> Stashed changes
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
-            println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
+            println(resolutionMethod[methodId], " time: " * string(round(resolutionTime, sigdigits=2)) * "s\n")
         end         
     end 
 end
+<<<<<<< Updated upstream
+=======
+
+generateDataSet()
+solveDataSet()
+performanceDiagram("D:/M1/RO203/Projet_RO203/Towers/diagramme")
+resultsArray("D:/M1/RO203/Projet_RO203/Towers/results.tex")
+
+# nord,sud,ouest,est = generateInstance(3)
+# saveInstance(nord,sud,ouest,est,"instance_t3_1.txt")
+
+# filename = "./data/instance_t5_1.txt"
+# nord,sud,ouest,est = readInputFile(filename)
+
+# displayGrid(nord,sud,ouest,est)
+
+# println("====== Solution avec CPLEX ======")
+# x, isOptimal, resolutionTime = cplexSolve(nord,sud,ouest,est)
+# println("optimal: ", isOptimal)
+# println("time: ", resolutionTime)
+# displaySolution(x,nord,sud,ouest,est)
+
+# println("== Solution avec l'heuristique ==")
+# start = time()
+# t, isOptimal = heuristicSolve(nord,sud,ouest,est)
+# resolutionTime = time() - start
+# println("optimal: ", isOptimal)
+# println("time: ", resolutionTime)
+# displaySolution(t,nord,sud,ouest,est)
+>>>>>>> Stashed changes
