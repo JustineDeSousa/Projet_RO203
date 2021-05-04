@@ -1,7 +1,7 @@
 #Pour executer le code:
 # cd("D:/M1/RO203/Projet_RO203/Towers") Chemin à modifier
 # include("./src/generation.jl")
-# This file contains methods to generate a data set of instances (i.e., sudoku grids)
+# This file contains methods to generate a data set of instances 
 include("io.jl")
 
 """
@@ -144,4 +144,5 @@ function generateDataSet()
 		end
 	end
 end
+
 
