@@ -145,9 +145,3 @@ function generateDataSet()
 	end
 end
 
-<<<<<<< Updated upstream
-#generateDataSet()
-=======
-
-
->>>>>>> Stashed changes

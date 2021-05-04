@@ -526,27 +526,17 @@ function solveDataSet()
 
 
             # Display the results obtained with the method on the current instance
-<<<<<<< Updated upstream
-
-            #include(outputFile) #pose soucis
 
             include("../"*outputFile)
 
-=======
-            include("../"*outputFile) #pose soucis
->>>>>>> Stashed changes
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(resolutionTime, sigdigits=2)) * "s\n")
         end         
     end 
 end
-<<<<<<< Updated upstream
-=======
 
 generateDataSet()
 solveDataSet()
-performanceDiagram("D:/M1/RO203/Projet_RO203/Towers/diagramme")
-resultsArray("D:/M1/RO203/Projet_RO203/Towers/results.tex")
 
 # nord,sud,ouest,est = generateInstance(3)
 # saveInstance(nord,sud,ouest,est,"instance_t3_1.txt")
@@ -569,4 +559,4 @@ resultsArray("D:/M1/RO203/Projet_RO203/Towers/results.tex")
 # println("optimal: ", isOptimal)
 # println("time: ", resolutionTime)
 # displaySolution(t,nord,sud,ouest,est)
->>>>>>> Stashed changes
+
