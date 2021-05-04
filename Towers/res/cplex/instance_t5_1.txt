@@ -5,13 +5,6 @@ t = [
 [ 1 2 4 5 3 ];
 [ 3 4 2 1 5 ]
 ]
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-solveTime = 10.83400011062622
-=======
+
 solveTime = 0.1100001335144043
->>>>>>> Stashed changes
-=======
-solveTime = 0.1100001335144043
->>>>>>> Stashed changes
 isOptimal = true
